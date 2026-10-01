@@ -185,7 +185,16 @@ export function apply(state: SessionState, action: Action): void {
         queuedAt: Date.now(),
       };
       state.players.push(player);
-      state.queue.push(player.id);
+      // New arrivals join ahead of anyone already queued who has played at
+      // least one game this session, but behind players still waiting for
+      // their first game — everyone gets a first game before regulars get
+      // a second, and FCFS still decides order within each group.
+      const aheadOf = state.queue.findIndex((id) => {
+        const existing = byId(state, id);
+        return !existing || existing.gamesPlayed > 0;
+      });
+      if (aheadOf === -1) state.queue.push(player.id);
+      else state.queue.splice(aheadOf, 0, player.id);
       return;
     }
 

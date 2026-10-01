@@ -23,7 +23,10 @@ session.
 
 ## How the rotation works
 
-- **Check in** adds a player to the back of the queue with a skill level.
+- **Check in** adds a player with a skill level, placed ahead of anyone
+  already queued who has played at least one game this session, but behind
+  anyone still waiting for their first game — so everyone gets a first game
+  before regulars get a second, with FCFS order preserved within each group.
 - **Start next game** takes the first 4 players in line (2 in singles mode) and
   splits them into even teams, pairing the strongest available player with the
   weakest. If that exact foursome played together in one of the last couple of
