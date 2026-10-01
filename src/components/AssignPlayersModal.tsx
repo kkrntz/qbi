@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Action } from "@/lib/store";
+import type { Dispatch } from "@/lib/useSession";
 import type { GameMode, Player } from "@/lib/types";
 import { playersPerTeam } from "@/lib/types";
 import { balanceTeams, place, teamStrength, type Teams } from "@/lib/teamPicker";
@@ -28,7 +28,7 @@ export function AssignPlayersModal({
   gameMode: GameMode;
   waiting: Player[];
   players: Map<string, Player>;
-  dispatch: (action: Action) => Promise<boolean>;
+  dispatch: Dispatch;
   onClose: () => void;
 }) {
   const perTeam = playersPerTeam(gameMode);

@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import type { Action } from "@/lib/store";
+import type { Dispatch } from "@/lib/useSession";
 import { SKILLS, type Skill } from "@/lib/types";
 
 export function CheckInForm({
   dispatch,
 }: {
-  dispatch: (action: Action) => Promise<boolean>;
+  dispatch: Dispatch;
 }) {
   const [name, setName] = useState("");
   const [skill, setSkill] = useState<Skill>("intermediate");

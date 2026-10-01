@@ -8,6 +8,7 @@ import { CheckInForm } from "./CheckInForm";
 import { CourtCard } from "./CourtCard";
 import { EditMatchModal } from "./EditMatchModal";
 import { QueuePanel } from "./QueuePanel";
+import { SelfCheckInLink } from "./SelfCheckInLink";
 import { BenchPanel, HistoryPanel, LeaderboardPanel } from "./Panels";
 
 export function SessionDashboard() {
@@ -98,6 +99,8 @@ export function SessionDashboard() {
           <button onClick={() => dispatch({ type: "addCourt" })} className="btn text-xs">
             + Court
           </button>
+
+          <SelfCheckInLink />
 
           <button
             onClick={() => {

@@ -6,6 +6,9 @@ import type { SessionState } from "./types";
 
 const POLL_MS = 2500;
 
+/** Shared shape for the dispatch function passed down to every component. */
+export type Dispatch = (action: Action) => Promise<SessionState | false>;
+
 /**
  * Holds the shared session, refetching on a short interval so a second screen
  * (phone at the net post, laptop at the desk) stays in step.
@@ -33,7 +36,10 @@ export function useSession() {
     return () => clearInterval(timer);
   }, [refresh]);
 
-  const dispatch = useCallback(async (action: Action) => {
+  // Resolves to the fresh session state on success (truthy, and useful to
+  // callers that need it right away instead of waiting for the next
+  // render), or `false` on failure.
+  const dispatch = useCallback(async (action: Action): Promise<SessionState | false> => {
     busyRef.current = true;
     setBusy(true);
     setError(null);
@@ -48,8 +54,9 @@ export function useSession() {
         setError(body?.error ?? "That didn't work.");
         return false;
       }
-      setState(body as SessionState);
-      return true;
+      const next = body as SessionState;
+      setState(next);
+      return next;
     } catch {
       setError("Lost connection to the session.");
       return false;

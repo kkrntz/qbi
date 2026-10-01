@@ -1,6 +1,6 @@
 "use client";
 
-import type { Action } from "@/lib/store";
+import type { Dispatch } from "@/lib/useSession";
 import type { Court, GameMode, Player } from "@/lib/types";
 import { playersPerGame } from "@/lib/types";
 import { formatClock } from "@/lib/format";
@@ -13,7 +13,7 @@ type Props = {
   queueDepth: number;
   now: number;
   canRemove: boolean;
-  dispatch: (action: Action) => Promise<boolean>;
+  dispatch: Dispatch;
   onEditMatch: () => void;
   onAssignPlayers: () => void;
 };

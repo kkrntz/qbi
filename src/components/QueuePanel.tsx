@@ -1,6 +1,6 @@
 "use client";
 
-import type { Action } from "@/lib/store";
+import type { Dispatch } from "@/lib/useSession";
 import type { GameMode, Player } from "@/lib/types";
 import { playersPerGame } from "@/lib/types";
 import { formatWait } from "@/lib/format";
@@ -17,7 +17,7 @@ export function QueuePanel({
   players: Map<string, Player>;
   gameMode: GameMode;
   now: number;
-  dispatch: (action: Action) => Promise<boolean>;
+  dispatch: Dispatch;
 }) {
   const needed = playersPerGame(gameMode);
 

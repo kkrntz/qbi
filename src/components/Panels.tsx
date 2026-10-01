@@ -1,6 +1,6 @@
 "use client";
 
-import type { Action } from "@/lib/store";
+import type { Dispatch } from "@/lib/useSession";
 import type { MatchRecord, Player } from "@/lib/types";
 import { formatClock } from "@/lib/format";
 import { Avatar, Empty, SkillChip } from "./ui";
@@ -10,7 +10,7 @@ export function BenchPanel({
   dispatch,
 }: {
   benched: Player[];
-  dispatch: (action: Action) => Promise<boolean>;
+  dispatch: Dispatch;
 }) {
   return (
     <div>

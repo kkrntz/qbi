@@ -21,6 +21,14 @@ every device pointed at the server sees the same queue (the page refetches
 every few seconds). Delete that file — or hit **Reset** — to start a fresh
 session.
 
+### Self check-in
+
+`/checkin` is a standalone, phone-friendly page players can use to add
+themselves to the queue — no operator needed. Click **Self check-in link** in
+the header to get the shareable URL (copy it, text it, or print it as a QR
+code for court-side signage). After checking in, a player sees their spot in
+line and can hand the device to the next person.
+
 ## How the rotation works
 
 - **Check in** adds a player with a skill level, placed ahead of anyone
