@@ -26,15 +26,16 @@ export async function readJsonBody<T>(request: Request): Promise<T | null> {
   }
 }
 
-const UNAUTHENTICATED = NextResponse.json({ error: "Sign in to continue." }, { status: 401 });
-const FORBIDDEN = NextResponse.json(
-  { error: "You don't have access to this club." },
-  { status: 403 },
-);
-const SUPER_ADMIN_ONLY = NextResponse.json(
-  { error: "Only a super admin can do that." },
-  { status: 403 },
-);
+// Each of these builds a *fresh* NextResponse per call rather than reusing a
+// shared instance — a Response body is a one-time-read stream, so a module-
+// level singleton would serialize fine on the first request that returns it
+// and come back empty on every one after that for the life of the process.
+const unauthenticated = () =>
+  NextResponse.json({ error: "Sign in to continue." }, { status: 401 });
+const forbidden = () =>
+  NextResponse.json({ error: "You don't have access to this club." }, { status: 403 });
+const superAdminOnly = () =>
+  NextResponse.json({ error: "Only a super admin can do that." }, { status: 403 });
 
 /**
  * Resolves the logged-in user, or returns the `NextResponse` the caller
@@ -43,18 +44,18 @@ const SUPER_ADMIN_ONLY = NextResponse.json(
  */
 export async function requireUser(): Promise<User | NextResponse> {
   const user = await getCurrentUser();
-  return user ?? UNAUTHENTICATED;
+  return user ?? unauthenticated();
 }
 
 export async function requireSuperAdmin(): Promise<User | NextResponse> {
   const user = await requireUser();
   if (user instanceof NextResponse) return user;
-  return user.role === "super_admin" ? user : SUPER_ADMIN_ONLY;
+  return user.role === "super_admin" ? user : superAdminOnly();
 }
 
 /** Super admin, or a club admin whose `clubIds` includes `clubId`. */
 export async function requireClubAccess(clubId: string): Promise<User | NextResponse> {
   const user = await requireUser();
   if (user instanceof NextResponse) return user;
-  return canAccessClub(user, clubId) ? user : FORBIDDEN;
+  return canAccessClub(user, clubId) ? user : forbidden();
 }

@@ -9,6 +9,17 @@ const POLL_MS = 2500;
 /** Shared shape for the dispatch function passed down to every component. */
 export type Dispatch = (action: Action) => Promise<Session | false>;
 
+/** Parses a response body as JSON, tolerating an empty or malformed one
+ * instead of throwing — callers get `null` and fall back to a status-based
+ * message rather than a generic "lost connection" that hides what happened. */
+async function safeJson(res: Response): Promise<Record<string, unknown> | null> {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Holds one club's session (its live game data plus id/clubId/endedAt),
  * refetching on a short interval so a second screen (phone at the net post,
@@ -27,9 +38,10 @@ export function useSession(clubId: string, sessionId: string) {
       const res = await fetch(`/api/clubs/${clubId}/sessions/${sessionId}`, {
         cache: "no-store",
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body?.error ?? "Could not reach the session.");
-      setState(body as Session);
+      const body = await safeJson(res);
+      if (!res.ok)
+        throw new Error((body?.error as string) ?? `Could not reach the session (${res.status}).`);
+      setState(body as unknown as Session);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load session.");
     }
@@ -55,12 +67,12 @@ export function useSession(clubId: string, sessionId: string) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(action),
         });
-        const body = await res.json();
+        const body = await safeJson(res);
         if (!res.ok) {
-          setError(body?.error ?? "That didn't work.");
+          setError((body?.error as string) ?? `That didn't work (${res.status}).`);
           return false;
         }
-        const next = body as Session;
+        const next = body as unknown as Session;
         setState(next);
         return next;
       } catch {
