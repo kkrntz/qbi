@@ -14,7 +14,13 @@ import {
 } from "./types";
 import { balanceTeams } from "./teamPicker";
 
-const DATA_DIR = path.join(process.cwd(), ".data");
+// Override with DATA_DIR in .env.local to store session data somewhere else
+// (a mounted volume in a container, a separate dir per facility, etc).
+// Relative paths resolve against the project root; absolute paths are used
+// as-is.
+const DATA_DIR = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR)
+  : path.join(process.cwd(), ".data");
 const DATA_FILE = path.join(DATA_DIR, "session.json");
 
 const court = (name: string): Court => ({

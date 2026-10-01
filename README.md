@@ -16,6 +16,19 @@ npm install
 npm run dev       # http://localhost:3000
 ```
 
+### Configuration
+
+Copy `.env.example` to `.env.local` to override the defaults (both values are
+optional; uncomment only what you need):
+
+- `PORT` — port the dev/production server listens on (Next.js reads this
+  natively).
+- `DATA_DIR` — where session data is stored. Relative paths resolve against
+  the project root; absolute paths are used as-is. Useful for a mounted
+  volume in a container, or a separate directory per facility.
+
+`.env.local` is gitignored; `.env.example` is the committed template.
+
 The session lives in `.data/session.json`, so the board survives a restart and
 every device pointed at the server sees the same queue (the page refetches
 every few seconds).
