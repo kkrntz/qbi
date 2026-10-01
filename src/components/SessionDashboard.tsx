@@ -1,20 +1,30 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSession, useTicker } from "@/lib/useSession";
-import { playersPerGame } from "@/lib/types";
+import { playersPerGame, type Player } from "@/lib/types";
 import { CheckInForm } from "./CheckInForm";
 import { CourtCard } from "./CourtCard";
+import { EditMatchModal } from "./EditMatchModal";
 import { QueuePanel } from "./QueuePanel";
 import { BenchPanel, HistoryPanel, LeaderboardPanel } from "./Panels";
 
 export function SessionDashboard() {
   const { state, error, dispatch, dismissError } = useSession();
   const now = useTicker();
+  const [editMatchCourtId, setEditMatchCourtId] = useState<string | null>(null);
 
   const players = useMemo(
     () => new Map((state?.players ?? []).map((p) => [p.id, p])),
     [state?.players],
+  );
+
+  const waitingPlayers = useMemo(
+    () =>
+      (state?.queue ?? [])
+        .map((id) => players.get(id))
+        .filter((p): p is Player => Boolean(p)),
+    [state?.queue, players],
   );
 
   if (!state) {
@@ -125,6 +135,7 @@ export function SessionDashboard() {
                 now={now}
                 canRemove={courts.length > 1}
                 dispatch={dispatch}
+                onEditMatch={() => setEditMatchCourtId(court.id)}
               />
             ))}
           </div>
@@ -177,6 +188,24 @@ export function SessionDashboard() {
           </p>
         </aside>
       </div>
+
+      {editMatchCourtId &&
+        (() => {
+          const court = courts.find((c) => c.id === editMatchCourtId);
+          if (!court?.match) return null;
+          return (
+            <EditMatchModal
+              courtId={court.id}
+              courtName={court.name}
+              gameMode={settings.gameMode}
+              match={court.match}
+              waiting={waitingPlayers}
+              players={players}
+              dispatch={dispatch}
+              onClose={() => setEditMatchCourtId(null)}
+            />
+          );
+        })()}
     </div>
   );
 }

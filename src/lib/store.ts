@@ -163,6 +163,7 @@ export type Action =
   | { type: "removeCourt"; courtId: string }
   | { type: "setCourtClosed"; courtId: string; closed: boolean }
   | { type: "startGame"; courtId: string }
+  | { type: "updateMatch"; courtId: string; teamA: string[]; teamB: string[] }
   | { type: "endGame"; courtId: string; winner: Winner }
   | { type: "cancelGame"; courtId: string }
   | { type: "setGameMode"; gameMode: GameMode }
@@ -285,6 +286,49 @@ export function apply(state: SessionState, action: Action): void {
         player.queuedAt = null;
       }
       target.match = { id: randomUUID(), teamA, teamB, startedAt: Date.now() };
+      return;
+    }
+
+    case "updateMatch": {
+      const target = state.courts.find((c) => c.id === action.courtId);
+      if (!target) throw new Error("That court no longer exists.");
+      if (!target.match) throw new Error(`${target.name} doesn't have a game in progress.`);
+
+      const perTeam = playersPerTeam(state.settings.gameMode);
+      if (action.teamA.length !== perTeam || action.teamB.length !== perTeam)
+        throw new Error(
+          `${state.settings.gameMode === "doubles" ? "Doubles" : "Singles"} needs ${perTeam} player${perTeam > 1 ? "s" : ""} per team.`,
+        );
+
+      const allIds = [...action.teamA, ...action.teamB];
+      if (new Set(allIds).size !== allIds.length)
+        throw new Error("A player can only be on one team.");
+
+      const currentIds = new Set([...target.match.teamA, ...target.match.teamB]);
+      for (const id of allIds) {
+        const player = byId(state, id);
+        if (!player) throw new Error("One of the selected players no longer exists.");
+        if (!currentIds.has(id) && player.status !== "waiting")
+          throw new Error(`${player.name} isn't available to play right now.`);
+      }
+
+      // Anyone dropped from the lineup goes back to the front of the queue —
+      // they didn't choose to leave, so they get priority to play next.
+      // Anyone newly brought in leaves the queue and starts playing.
+      const keptIds = new Set(allIds);
+      const leaving = [...currentIds].filter((id) => !keptIds.has(id));
+      const arriving = allIds.filter((id) => !currentIds.has(id));
+
+      for (const id of arriving) {
+        const player = byId(state, id)!;
+        dropFromQueue(state, id);
+        player.status = "playing";
+        player.queuedAt = null;
+      }
+      for (const id of leaving) enqueue(state, id, true);
+
+      target.match.teamA = action.teamA;
+      target.match.teamB = action.teamB;
       return;
     }
 

@@ -34,6 +34,12 @@ session.
   players instead of repeating the same group (one slot if only one
   replacement is available) — the longest-waiting players in the group keep
   their spot whenever possible.
+- **✎ (edit teams)** on a live court lets you reshuffle who's playing after the
+  game has already started — move someone between teams, or swap a player out
+  for someone currently waiting. A swapped-out player goes back to the front
+  of the queue (they didn't choose to leave); a swapped-in player starts
+  playing immediately. Stats are only credited for whoever is on the roster
+  when the game actually ends.
 - **Won / End, no winner** records the game, credits games played and wins, and
   returns everyone to the back of the queue — nobody cuts ahead of players
   who were already waiting. **Winner priority** decides the order of the two

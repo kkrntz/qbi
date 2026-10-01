@@ -14,6 +14,7 @@ type Props = {
   now: number;
   canRemove: boolean;
   dispatch: (action: Action) => Promise<boolean>;
+  onEditMatch: () => void;
 };
 
 function Team({
@@ -64,6 +65,7 @@ export function CourtCard({
   now,
   canRemove,
   dispatch,
+  onEditMatch,
 }: Props) {
   const needed = playersPerGame(gameMode);
   const shortBy = needed - queueDepth;
@@ -82,9 +84,19 @@ export function CourtCard({
           )}
         </div>
         {court.match ? (
-          <span className="font-mono text-lg font-bold tabular-nums text-accent">
-            {formatClock(now - court.match.startedAt)}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-lg font-bold tabular-nums text-accent">
+              {formatClock(now - court.match.startedAt)}
+            </span>
+            <button
+              onClick={onEditMatch}
+              className="btn btn-icon"
+              aria-label={`Edit teams for ${court.name}`}
+              title="Move players between teams or swap in someone from the queue"
+            >
+              ✎
+            </button>
+          </div>
         ) : (
           <div className="flex gap-1">
             <button
