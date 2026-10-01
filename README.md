@@ -33,7 +33,10 @@ session.
   matches, it swaps the two lowest-priority slots for the next two queued
   players instead of repeating the same group (one slot if only one
   replacement is available) — the longest-waiting players in the group keep
-  their spot whenever possible.
+  their spot whenever possible. **Assign players…** opens a manual picker
+  instead: pick exactly who plays from anyone currently waiting (not just the
+  front of the line), arrange them into teams yourself, then press **Start
+  game** — all the automatic selection above is bypassed for that game.
 - **✎ (edit teams)** on a live court lets you reshuffle who's playing after the
   game has already started — move someone between teams, or swap a player out
   for someone currently waiting. A swapped-out player goes back to the front

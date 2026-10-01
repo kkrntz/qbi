@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useSession, useTicker } from "@/lib/useSession";
 import { playersPerGame, type Player } from "@/lib/types";
+import { AssignPlayersModal } from "./AssignPlayersModal";
 import { CheckInForm } from "./CheckInForm";
 import { CourtCard } from "./CourtCard";
 import { EditMatchModal } from "./EditMatchModal";
@@ -13,6 +14,7 @@ export function SessionDashboard() {
   const { state, error, dispatch, dismissError } = useSession();
   const now = useTicker();
   const [editMatchCourtId, setEditMatchCourtId] = useState<string | null>(null);
+  const [assignCourtId, setAssignCourtId] = useState<string | null>(null);
 
   const players = useMemo(
     () => new Map((state?.players ?? []).map((p) => [p.id, p])),
@@ -136,6 +138,7 @@ export function SessionDashboard() {
                 canRemove={courts.length > 1}
                 dispatch={dispatch}
                 onEditMatch={() => setEditMatchCourtId(court.id)}
+                onAssignPlayers={() => setAssignCourtId(court.id)}
               />
             ))}
           </div>
@@ -203,6 +206,23 @@ export function SessionDashboard() {
               players={players}
               dispatch={dispatch}
               onClose={() => setEditMatchCourtId(null)}
+            />
+          );
+        })()}
+
+      {assignCourtId &&
+        (() => {
+          const court = courts.find((c) => c.id === assignCourtId);
+          if (!court || court.match) return null;
+          return (
+            <AssignPlayersModal
+              courtId={court.id}
+              courtName={court.name}
+              gameMode={settings.gameMode}
+              waiting={waitingPlayers}
+              players={players}
+              dispatch={dispatch}
+              onClose={() => setAssignCourtId(null)}
             />
           );
         })()}

@@ -15,6 +15,7 @@ type Props = {
   canRemove: boolean;
   dispatch: (action: Action) => Promise<boolean>;
   onEditMatch: () => void;
+  onAssignPlayers: () => void;
 };
 
 function Team({
@@ -66,6 +67,7 @@ export function CourtCard({
   canRemove,
   dispatch,
   onEditMatch,
+  onAssignPlayers,
 }: Props) {
   const needed = playersPerGame(gameMode);
   const shortBy = needed - queueDepth;
@@ -174,13 +176,23 @@ export function CourtCard({
                 ? `Waiting on ${shortBy} more player${shortBy > 1 ? "s" : ""}.`
                 : "Ready for the next group."}
           </p>
-          <button
-            onClick={() => dispatch({ type: "startGame", courtId: court.id })}
-            className="btn btn-primary"
-            disabled={court.closed || shortBy > 0}
-          >
-            Start next game
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => dispatch({ type: "startGame", courtId: court.id })}
+              className="btn btn-primary"
+              disabled={court.closed || shortBy > 0}
+            >
+              Start next game
+            </button>
+            <button
+              onClick={onAssignPlayers}
+              className="btn"
+              disabled={court.closed || shortBy > 0}
+              title="Pick who plays and arrange the teams yourself, then start"
+            >
+              Assign players…
+            </button>
+          </div>
         </div>
       )}
     </section>

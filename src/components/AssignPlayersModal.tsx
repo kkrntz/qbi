@@ -2,16 +2,15 @@
 
 import { useState } from "react";
 import type { Action } from "@/lib/store";
-import type { GameMode, Match, Player } from "@/lib/types";
+import type { GameMode, Player } from "@/lib/types";
 import { playersPerTeam } from "@/lib/types";
-import { place, sameTeams, teamStrength, type Teams } from "@/lib/teamPicker";
+import { place, teamStrength, type Teams } from "@/lib/teamPicker";
 import { Avatar, SkillChip } from "./ui";
 
-export function EditMatchModal({
+export function AssignPlayersModal({
   courtId,
   courtName,
   gameMode,
-  match,
   waiting,
   players,
   dispatch,
@@ -20,34 +19,25 @@ export function EditMatchModal({
   courtId: string;
   courtName: string;
   gameMode: GameMode;
-  match: Match;
   waiting: Player[];
   players: Map<string, Player>;
   dispatch: (action: Action) => Promise<boolean>;
   onClose: () => void;
 }) {
   const perTeam = playersPerTeam(gameMode);
-  const original: Teams = { A: match.teamA, B: match.teamB };
-  const [teams, setTeams] = useState<Teams>({ A: [...match.teamA], B: [...match.teamB] });
+  const [teams, setTeams] = useState<Teams>({ A: [], B: [] });
   const [submitting, setSubmitting] = useState(false);
 
   const assign = (id: string, target: "A" | "B") =>
     setTeams((prev) => place(prev, id, target, perTeam));
 
-  const onCourtIds = [...match.teamA, ...match.teamB];
-  const onCourtPlayers = onCourtIds
-    .map((id) => players.get(id))
-    .filter((p): p is Player => Boolean(p));
-  const pool = [...onCourtPlayers, ...waiting];
-
   const ready = teams.A.length === perTeam && teams.B.length === perTeam;
-  const changed = !sameTeams(teams, original);
 
-  async function handleSave() {
-    if (!ready || !changed || submitting) return;
+  async function handleStart() {
+    if (!ready || submitting) return;
     setSubmitting(true);
     const ok = await dispatch({
-      type: "updateMatch",
+      type: "startCustomGame",
       courtId,
       teamA: teams.A,
       teamB: teams.B,
@@ -62,7 +52,7 @@ export function EditMatchModal({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label={`Edit teams for ${courtName}`}
+      aria-label={`Assign players to ${courtName}`}
     >
       <div
         className="panel flex w-full max-w-lg flex-col gap-4 p-5"
@@ -70,10 +60,9 @@ export function EditMatchModal({
       >
         <header className="flex items-start justify-between gap-2">
           <div>
-            <h2 className="text-base font-bold">Edit teams — {courtName}</h2>
+            <h2 className="text-base font-bold">Assign players — {courtName}</h2>
             <p className="text-xs text-muted">
-              Move players between teams or swap in someone from the queue. The
-              game clock keeps running.
+              Pick who plays, arrange the teams, then start the game.
             </p>
           </div>
           <button onClick={onClose} className="btn btn-icon" aria-label="Close">
@@ -93,7 +82,7 @@ export function EditMatchModal({
                 </span>
               </div>
               {teams[side].length === 0 ? (
-                <p className="py-2 text-xs text-muted">Nobody assigned.</p>
+                <p className="py-2 text-xs text-muted">Nobody picked yet.</p>
               ) : (
                 <ul className="flex flex-col gap-1.5">
                   {teams[side].map((id) => {
@@ -122,20 +111,24 @@ export function EditMatchModal({
         </div>
 
         <div>
-          <h3 className="label mb-2">On court &amp; waiting ({pool.length})</h3>
-          {pool.length === 0 ? (
-            <p className="py-2 text-center text-sm text-muted">No one available.</p>
+          <h3 className="label mb-2">Waiting ({waiting.length})</h3>
+          {waiting.length === 0 ? (
+            <p className="py-2 text-center text-sm text-muted">
+              No one is waiting right now.
+            </p>
           ) : (
             <ul className="flex max-h-64 flex-col gap-1.5 overflow-y-auto pr-1">
-              {pool.map((player) => {
+              {waiting.map((player, index) => {
                 const onA = teams.A.includes(player.id);
                 const onB = teams.B.includes(player.id);
-                const isOnCourt = onCourtIds.includes(player.id);
                 return (
                   <li
                     key={player.id}
                     className="flex items-center gap-2 rounded-xl border border-border p-2"
                   >
+                    <span className="w-5 shrink-0 text-center text-xs font-bold text-muted">
+                      {index + 1}
+                    </span>
                     <Avatar player={player} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
@@ -145,7 +138,6 @@ export function EditMatchModal({
                         <SkillChip skill={player.skill} />
                       </div>
                       <span className="text-[11px] text-muted">
-                        {isOnCourt ? "currently on court" : "waiting"} ·{" "}
                         {player.gamesPlayed} played
                       </span>
                     </div>
@@ -172,18 +164,18 @@ export function EditMatchModal({
 
         <div className="flex gap-2">
           <button
-            onClick={() => setTeams({ A: [...original.A], B: [...original.B] })}
+            onClick={() => setTeams({ A: [], B: [] })}
             className="btn"
-            disabled={!changed}
+            disabled={teams.A.length === 0 && teams.B.length === 0}
           >
-            Reset
+            Clear
           </button>
           <button
-            onClick={handleSave}
+            onClick={handleStart}
             className="btn btn-primary flex-1"
-            disabled={!ready || !changed || submitting}
+            disabled={!ready || submitting}
           >
-            {ready ? "Save changes" : `Pick ${perTeam * 2 - teams.A.length - teams.B.length} more`}
+            {ready ? "Start game" : `Pick ${perTeam * 2 - teams.A.length - teams.B.length} more`}
           </button>
         </div>
       </div>
