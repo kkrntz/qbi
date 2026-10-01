@@ -4,8 +4,15 @@ import { useState } from "react";
 import type { Action } from "@/lib/store";
 import type { GameMode, Player } from "@/lib/types";
 import { playersPerTeam } from "@/lib/types";
-import { place, teamStrength, type Teams } from "@/lib/teamPicker";
+import { balanceTeams, place, teamStrength, type Teams } from "@/lib/teamPicker";
 import { Avatar, SkillChip } from "./ui";
+
+/** Front-of-queue players, balanced by skill, as a starting-point lineup. */
+function suggestTeams(waiting: Player[], gameMode: GameMode, perTeam: number): Teams {
+  const upNext = waiting.slice(0, perTeam * 2);
+  if (upNext.length < perTeam * 2) return { A: [], B: [] };
+  return balanceTeams(upNext, gameMode);
+}
 
 export function AssignPlayersModal({
   courtId,
@@ -25,7 +32,11 @@ export function AssignPlayersModal({
   onClose: () => void;
 }) {
   const perTeam = playersPerTeam(gameMode);
-  const [teams, setTeams] = useState<Teams>({ A: [], B: [] });
+  // Pre-filled with the next players in line, balanced by skill — the
+  // operator can still rearrange or swap anyone before starting.
+  const [teams, setTeams] = useState<Teams>(() =>
+    suggestTeams(waiting, gameMode, perTeam),
+  );
   const [submitting, setSubmitting] = useState(false);
 
   const assign = (id: string, target: "A" | "B") =>
@@ -62,7 +73,8 @@ export function AssignPlayersModal({
           <div>
             <h2 className="text-base font-bold">Assign players — {courtName}</h2>
             <p className="text-xs text-muted">
-              Pick who plays, arrange the teams, then start the game.
+              Pre-filled with the next players in line — rearrange or swap
+              anyone, then start the game.
             </p>
           </div>
           <button onClick={onClose} className="btn btn-icon" aria-label="Close">
@@ -163,6 +175,13 @@ export function AssignPlayersModal({
         </div>
 
         <div className="flex gap-2">
+          <button
+            onClick={() => setTeams(suggestTeams(waiting, gameMode, perTeam))}
+            className="btn"
+            title="Reset to the next players in line, balanced by skill"
+          >
+            Reset
+          </button>
           <button
             onClick={() => setTeams({ A: [], B: [] })}
             className="btn"

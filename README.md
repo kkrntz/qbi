@@ -34,9 +34,11 @@ session.
   players instead of repeating the same group (one slot if only one
   replacement is available) — the longest-waiting players in the group keep
   their spot whenever possible. **Assign players…** opens a manual picker
-  instead: pick exactly who plays from anyone currently waiting (not just the
-  front of the line), arrange them into teams yourself, then press **Start
-  game** — all the automatic selection above is bypassed for that game.
+  instead, pre-filled with that same next-in-line, skill-balanced group as a
+  starting point — rearrange who's on which team, or swap anyone out for a
+  different player currently waiting, then press **Start game**. **Reset**
+  returns to that automatic suggestion; **Clear** empties the picker to build
+  the lineup from scratch.
 - **✎ (edit teams)** on a live court lets you reshuffle who's playing after the
   game has already started — move someone between teams, or swap a player out
   for someone currently waiting. A swapped-out player goes back to the front

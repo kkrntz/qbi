@@ -8,11 +8,11 @@ import {
   Player,
   SessionState,
   Skill,
-  SKILL_RATING,
   Winner,
   playersPerGame,
   playersPerTeam,
 } from "./types";
+import { balanceTeams } from "./teamPicker";
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const DATA_FILE = path.join(DATA_DIR, "session.json");
@@ -127,28 +127,6 @@ function pickUpNextGroup(state: SessionState, needed: number): string[] {
     trial[needed - 1 - i] = state.queue[needed + i];
   }
   return trial;
-}
-
-/**
- * Splits players into two teams of even strength by pairing the strongest
- * remaining player with the weakest one.
- */
-export function balanceTeams(players: Player[], mode: GameMode) {
-  const perTeam = playersPerTeam(mode);
-  const sorted = [...players].sort(
-    (a, b) => SKILL_RATING[b.skill] - SKILL_RATING[a.skill],
-  );
-  const teamA: string[] = [];
-  const teamB: string[] = [];
-  while (sorted.length) {
-    const team = teamA.length <= teamB.length ? teamA : teamB;
-    if (team.length >= perTeam) break;
-    team.push(sorted.shift()!.id);
-    // The strongest player left takes the weakest as a partner, so each team
-    // ends up with comparable total strength.
-    if (team.length < perTeam && sorted.length) team.push(sorted.pop()!.id);
-  }
-  return { teamA, teamB };
 }
 
 // --- actions ---------------------------------------------------------------
@@ -278,7 +256,7 @@ export function apply(state: SessionState, action: Action): void {
       const upNext = upNextIds
         .map((id) => byId(state, id))
         .filter((p): p is Player => Boolean(p));
-      const { teamA, teamB } = balanceTeams(upNext, state.settings.gameMode);
+      const { A: teamA, B: teamB } = balanceTeams(upNext, state.settings.gameMode);
 
       const chosen = new Set(upNextIds);
       state.queue = state.queue.filter((id) => !chosen.has(id));
