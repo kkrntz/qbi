@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, useTicker } from "@/lib/useSession";
-import { playersPerGame, type Player } from "@/lib/types";
+import { playersPerGame, type Player, type PublicUser } from "@/lib/types";
 import { buildSessionExport, downloadJson, sessionFileName } from "@/lib/sessionExport";
 import { AssignPlayersModal } from "./AssignPlayersModal";
 import { CheckInForm } from "./CheckInForm";
@@ -13,16 +13,19 @@ import { EditMatchModal } from "./EditMatchModal";
 import { EndSessionModal } from "./EndSessionModal";
 import { QueuePanel } from "./QueuePanel";
 import { SelfCheckInLink } from "./SelfCheckInLink";
+import { UserMenu } from "./UserMenu";
 import { BenchPanel, HistoryPanel, LeaderboardPanel } from "./Panels";
 
 export function SessionDashboard({
   clubId,
   clubName,
   sessionId,
+  user,
 }: {
   clubId: string;
   clubName: string;
   sessionId: string;
+  user: PublicUser;
 }) {
   const { state, error, dispatch, dismissError } = useSession(clubId, sessionId);
   const now = useTicker();
@@ -83,19 +86,22 @@ export function SessionDashboard({
     const sessionPlayers = new Map(state.players.map((p) => [p.id, p]));
     return (
       <div className="mx-auto flex max-w-2xl flex-col gap-4 p-4 sm:p-6">
-        <div>
-          <Link
-            href={`/clubs/${clubId}`}
-            className="text-xs font-medium text-muted hover:text-accent hover:underline"
-          >
-            ← {clubName}
-          </Link>
-          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-            {state.label || "Session"}
-          </h1>
-          <p className="text-xs text-muted">
-            Ended {new Date(state.endedAt).toLocaleString()} · read-only
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <Link
+              href={`/clubs/${clubId}`}
+              className="text-xs font-medium text-muted hover:text-accent hover:underline"
+            >
+              ← {clubName}
+            </Link>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+              {state.label || "Session"}
+            </h1>
+            <p className="text-xs text-muted">
+              Ended {new Date(state.endedAt).toLocaleString()} · read-only
+            </p>
+          </div>
+          <UserMenu user={user} />
         </div>
 
         <dl className="panel grid grid-cols-2 gap-3 p-4 text-sm sm:grid-cols-4">
@@ -229,6 +235,8 @@ export function SessionDashboard({
           >
             End session
           </button>
+
+          <UserMenu user={user} />
         </div>
       </header>
 

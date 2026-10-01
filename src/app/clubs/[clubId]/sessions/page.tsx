@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClub, listSessions } from "@/lib/clubStore";
+import { requirePageClubAccess } from "@/lib/pageAuth";
 import { SessionHistoryList } from "@/components/SessionHistoryList";
 
 export default async function SessionHistoryPage({
@@ -9,6 +10,7 @@ export default async function SessionHistoryPage({
   params: Promise<{ clubId: string }>;
 }) {
   const { clubId } = await params;
+  await requirePageClubAccess(clubId);
   const club = await getClub(clubId);
   if (!club) notFound();
 

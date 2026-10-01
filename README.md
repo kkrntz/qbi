@@ -5,6 +5,9 @@ club keeps its own courts and runs a series of sessions over time — check
 players into a session, let the app pull the next group onto a free court
 with balanced teams, record results, and when the night's done, end the
 session (it becomes permanent, read-only history) and start the next one.
+Operators sign in (a super admin runs every club; a club admin runs only
+the ones assigned to them); players never need an account — self check-in
+and their personal status page work from a plain link.
 
 ## Requirements
 
@@ -24,17 +27,44 @@ optional; uncomment only what you need):
 
 - `PORT` — port the dev/production server listens on (Next.js reads this
   natively).
-- `DATA_DIR` — where club and session data is stored. Relative paths resolve
-  against the project root; absolute paths are used as-is. Useful for a
-  mounted volume in a container, or a separate directory per facility.
+- `DATA_DIR` — where club, session, and user data is stored. Relative paths
+  resolve against the project root; absolute paths are used as-is. Useful
+  for a mounted volume in a container, or a separate directory per facility.
+- `AUTH_SECRET` — signs login session cookies. Optional: if unset, one is
+  generated and saved to `.data/auth-secret` on first run, so this is only
+  worth setting explicitly if you're running more than one server instance
+  against the same `DATA_DIR` and want them to share login sessions.
 
 `.env.local` is gitignored; `.env.example` is the committed template.
 
-Data lives under `.data/` (`clubs.json` plus one `club-sessions/<clubId>.json`
-per club), so it survives a restart and every device pointed at the server
-sees the same state (pages refetch every few seconds). If `.data/session.json`
-exists from a version of this app before clubs existed, it's imported
-automatically into a new "My Club" the first time `/clubs` loads.
+Data lives under `.data/` (`clubs.json`, `users.json`, and one
+`club-sessions/<clubId>.json` per club), so it survives a restart and every
+device pointed at the server sees the same state (pages refetch every few
+seconds). If `.data/session.json` exists from a version of this app before
+clubs existed, it's imported automatically into a new "My Club" the first
+time `/clubs` loads.
+
+## Accounts and roles
+
+The first time anyone visits `/login` with no users yet, it shows a one-time
+setup form instead of a login form — whatever account is created there
+becomes the first **super admin**. After that, setup is disabled; new
+accounts come from an existing super admin at **`/users`**.
+
+- **Super admin** — manages every club: full club CRUD, create/manage other
+  users (super admins and club admins), and full access to every club's
+  sessions.
+- **Club admin** — manages only the club(s) assigned to them (`/users` lets a
+  super admin pick one or more). They see a filtered `/clubs` list with no
+  create/rename/delete controls, and get redirected away from any other
+  club's pages.
+
+**Self check-in and player status pages stay public on purpose** — players
+don't have accounts, so `/clubs/<clubId>/sessions/<sessionId>/checkin` and
+`/p/<playerId>` work with no login, same as the three self-service actions
+they rely on (`checkIn`, `checkOut`, `setBenched`). Every other action —
+starting/ending games, court management, settings — requires a signed-in
+super admin or a club admin for that specific club.
 
 ## Clubs and sessions
 
@@ -128,11 +158,17 @@ status link to the clipboard for the operator to hand off.
 
 | Path | Purpose |
 | --- | --- |
-| `src/lib/types.ts` | Domain model: `Player`, `Court`, `Club`, `Session`, settings |
+| `src/lib/types.ts` | Domain model: `Player`, `Court`, `Club`, `Session`, `User`, settings |
 | `src/lib/store.ts` | Pure reducer — `apply(state, action)` for every in-session mutation; knows nothing about persistence |
 | `src/lib/clubStore.ts` | File-backed persistence for clubs and their session history; calls `apply()` for game actions, migrates a legacy single-session file on first run |
+| `src/lib/auth.ts` | Password hashing, signed session cookies, user storage/CRUD — no framework dependency |
+| `src/lib/session.ts` | Cookie get/set/clear and `getCurrentUser()`, built on `next/headers` |
+| `src/lib/pageAuth.ts` | `requirePageUser`/`requirePageClubAccess`/`requirePageSuperAdmin` — redirect-on-failure guards for Server Component pages |
 | `src/lib/teamPicker.ts` | Shared team-balancing/placement logic used by the automatic picker and the manual modals |
+| `src/app/api/auth` | `login`, `logout`, `setup` (first-run bootstrap), `me` |
+| `src/app/api/users` | User CRUD, super admin only |
 | `src/app/api/clubs` | Club CRUD (`GET`/`POST`), and nested `[clubId]` (`PATCH`/`DELETE`) |
-| `src/app/api/clubs/[clubId]/sessions` | Session list/create, nested `[sessionId]` (get/delete), `/end`, and `/actions` (the game-action dispatch endpoint) |
+| `src/app/api/clubs/[clubId]/sessions` | Session list/create, nested `[sessionId]` (get/delete), `/end`, and `/actions` (the game-action dispatch endpoint — publicly reachable only for `checkIn`/`checkOut`/`setBenched`) |
 | `src/app/clubs` | Club list, club home, session history, the dashboard, self check-in, and player-status pages |
+| `src/app/login`, `src/app/users` | Sign-in/setup, and the super-admin user manager |
 | `src/components` | Dashboard, court cards, queue and side panels |

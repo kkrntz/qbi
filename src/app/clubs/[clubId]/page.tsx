@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClub, listSessions } from "@/lib/clubStore";
+import { toPublicUser } from "@/lib/auth";
+import { requirePageClubAccess } from "@/lib/pageAuth";
 import { NewSessionForm } from "@/components/NewSessionForm";
+import { UserMenu } from "@/components/UserMenu";
 
 export default async function ClubPage({
   params,
@@ -9,6 +12,7 @@ export default async function ClubPage({
   params: Promise<{ clubId: string }>;
 }) {
   const { clubId } = await params;
+  const user = await requirePageClubAccess(clubId);
   const club = await getClub(clubId);
   if (!club) notFound();
 
@@ -18,13 +22,16 @@ export default async function ClubPage({
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-4 p-4 sm:p-6">
-      <div>
-        <Link href="/clubs" className="text-xs font-medium text-muted hover:text-accent hover:underline">
-          ← All clubs
-        </Link>
-        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-          <span className="text-ball">●</span> {club.name}
-        </h1>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <Link href="/clubs" className="text-xs font-medium text-muted hover:text-accent hover:underline">
+            ← All clubs
+          </Link>
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+            <span className="text-ball">●</span> {club.name}
+          </h1>
+        </div>
+        <UserMenu user={toPublicUser(user)} />
       </div>
 
       {active ? (

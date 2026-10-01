@@ -92,3 +92,20 @@ export type Session = SessionState & {
 
 export const playersPerTeam = (mode: GameMode) => (mode === "doubles" ? 2 : 1);
 export const playersPerGame = (mode: GameMode) => playersPerTeam(mode) * 2;
+
+/** `super_admin` manages every club; `club_admin` manages only `clubIds`. */
+export type Role = "super_admin" | "club_admin";
+
+export type User = {
+  id: string;
+  email: string;
+  /** `scrypt` hash, stored as `salt:hash` (both hex). Never sent to the client. */
+  passwordHash: string;
+  role: Role;
+  /** Clubs this user administers. Ignored (implicitly "all") for super_admin. */
+  clubIds: string[];
+  createdAt: number;
+};
+
+/** Safe-to-send-to-the-client view of a User — no passwordHash. */
+export type PublicUser = Omit<User, "passwordHash">;
