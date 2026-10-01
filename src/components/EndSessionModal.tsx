@@ -1,22 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import type { Dispatch } from "@/lib/useSession";
-import type { SessionState } from "@/lib/types";
+import type { Session } from "@/lib/types";
 import { buildSessionExport, downloadJson, sessionFileName } from "@/lib/sessionExport";
 
 export function EndSessionModal({
   state,
-  dispatch,
   onClose,
+  onEnded,
 }: {
-  state: SessionState;
-  dispatch: Dispatch;
+  state: Session;
   onClose: () => void;
+  onEnded: () => void;
 }) {
-  const [nextLabel, setNextLabel] = useState("");
   const [downloaded, setDownloaded] = useState(false);
   const [ending, setEnding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const liveCourts = state.courts.filter((c) => c.match).length;
   const durationMinutes = Math.max(0, Math.round((Date.now() - state.startedAt) / 60000));
@@ -28,9 +27,19 @@ export function EndSessionModal({
 
   async function endSession() {
     setEnding(true);
-    const ok = await dispatch({ type: "startSession", label: nextLabel });
-    setEnding(false);
-    if (ok) onClose();
+    setError(null);
+    try {
+      const res = await fetch(`/api/clubs/${state.clubId}/sessions/${state.id}/end`, {
+        method: "POST",
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.error ?? "Could not end the session.");
+      onEnded();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not end the session.");
+    } finally {
+      setEnding(false);
+    }
   }
 
   return (
@@ -51,7 +60,8 @@ export function EndSessionModal({
               End {state.label || "this session"}?
             </h2>
             <p className="text-xs text-muted">
-              Download a record of it, then start the next one.
+              It becomes read-only history — download a record of it first if
+              you want one.
             </p>
           </div>
           <button onClick={onClose} className="btn btn-icon" aria-label="Close">
@@ -90,24 +100,15 @@ export function EndSessionModal({
           </p>
         )}
 
+        {error && (
+          <p className="rounded-xl border border-danger/40 bg-danger-soft px-3 py-2 text-xs text-danger">
+            {error}
+          </p>
+        )}
+
         <button onClick={download} className="btn w-full">
           {downloaded ? "Downloaded ✓ — download again" : "Download session data"}
         </button>
-
-        <div>
-          <label htmlFor="next-label" className="label mb-1.5 block">
-            Name for the next session
-          </label>
-          <input
-            id="next-label"
-            value={nextLabel}
-            onChange={(e) => setNextLabel(e.target.value)}
-            placeholder="e.g. Tuesday Open Play"
-            className="w-full rounded-lg border border-border bg-inset px-3 py-2
-              text-sm text-text outline-none placeholder:text-muted
-              focus:border-accent"
-          />
-        </div>
 
         <div className="flex gap-2">
           <button onClick={onClose} className="btn flex-1">
@@ -118,7 +119,7 @@ export function EndSessionModal({
             className="btn btn-danger flex-1"
             disabled={ending}
           >
-            End session &amp; start new
+            {ending ? "Ending…" : "End session"}
           </button>
         </div>
       </div>

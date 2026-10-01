@@ -8,6 +8,8 @@ import { PlayerLinkButton } from "./PlayerLinkButton";
 import { Avatar, SkillChip } from "./ui";
 
 type Props = {
+  clubId: string;
+  sessionId: string;
   court: Court;
   players: Map<string, Player>;
   gameMode: GameMode;
@@ -20,11 +22,15 @@ type Props = {
 };
 
 function Team({
+  clubId,
+  sessionId,
   label,
   ids,
   players,
   onWin,
 }: {
+  clubId: string;
+  sessionId: string;
   label: string;
   ids: string[];
   players: Map<string, Player>;
@@ -51,7 +57,12 @@ function Team({
                 {player.name}
               </span>
               <SkillChip skill={player.skill} />
-              <PlayerLinkButton playerId={id} playerName={player.name} />
+              <PlayerLinkButton
+                clubId={clubId}
+                sessionId={sessionId}
+                playerId={id}
+                playerName={player.name}
+              />
             </li>
           );
         })}
@@ -61,6 +72,8 @@ function Team({
 }
 
 export function CourtCard({
+  clubId,
+  sessionId,
   court,
   players,
   gameMode,
@@ -134,6 +147,8 @@ export function CourtCard({
         <>
           <div className="flex items-stretch gap-2">
             <Team
+              clubId={clubId}
+              sessionId={sessionId}
               label="Team A"
               ids={court.match.teamA}
               players={players}
@@ -143,6 +158,8 @@ export function CourtCard({
             />
             <span className="self-center text-xs font-bold text-muted">vs</span>
             <Team
+              clubId={clubId}
+              sessionId={sessionId}
               label="Team B"
               ids={court.match.teamB}
               players={players}

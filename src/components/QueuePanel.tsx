@@ -8,12 +8,16 @@ import { PlayerLinkButton } from "./PlayerLinkButton";
 import { Avatar, Empty, SkillChip } from "./ui";
 
 export function QueuePanel({
+  clubId,
+  sessionId,
   queue,
   players,
   gameMode,
   now,
   dispatch,
 }: {
+  clubId: string;
+  sessionId: string;
   queue: string[];
   players: Map<string, Player>;
   gameMode: GameMode;
@@ -66,7 +70,12 @@ export function QueuePanel({
                       {player.name}
                     </span>
                     <SkillChip skill={player.skill} />
-                    <PlayerLinkButton playerId={id} playerName={player.name} />
+                    <PlayerLinkButton
+                      clubId={clubId}
+                      sessionId={sessionId}
+                      playerId={id}
+                      playerName={player.name}
+                    />
                   </div>
                   <span className="text-[11px] text-muted">
                     waiting {formatWait(now - (player.queuedAt ?? now))} ·{" "}

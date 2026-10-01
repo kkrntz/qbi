@@ -5,8 +5,16 @@ import { useSession, useTicker } from "@/lib/useSession";
 import { formatClock, formatWait } from "@/lib/format";
 import { SkillChip } from "./ui";
 
-export function PlayerStatus({ playerId }: { playerId: string }) {
-  const { state, dispatch } = useSession();
+export function PlayerStatus({
+  clubId,
+  sessionId,
+  playerId,
+}: {
+  clubId: string;
+  sessionId: string;
+  playerId: string;
+}) {
+  const { state, dispatch } = useSession(clubId, sessionId);
   const now = useTicker();
 
   if (!state) {
@@ -19,15 +27,30 @@ export function PlayerStatus({ playerId }: { playerId: string }) {
 
   const me = state.players.find((p) => p.id === playerId);
 
+  if (state.endedAt !== null) {
+    return (
+      <Centered>
+        <span className="text-4xl">🏁</span>
+        <h1 className="text-xl font-bold">This session has ended</h1>
+        <p className="text-sm text-muted">
+          Thanks for playing! Ask an operator for the link to a new session.
+        </p>
+      </Centered>
+    );
+  }
+
   if (!me) {
     return (
       <Centered>
         <span className="text-4xl">👋</span>
         <h1 className="text-xl font-bold">You&apos;re not checked in</h1>
         <p className="text-sm text-muted">
-          Either you&apos;ve been checked out, or the session was reset.
+          You&apos;ve been checked out of this session.
         </p>
-        <Link href="/checkin" className="btn btn-primary mt-2 w-full max-w-xs">
+        <Link
+          href={`/clubs/${clubId}/sessions/${sessionId}/checkin`}
+          className="btn btn-primary mt-2 w-full max-w-xs"
+        >
           Check in
         </Link>
       </Centered>

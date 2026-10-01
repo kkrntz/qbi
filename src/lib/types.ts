@@ -58,9 +58,9 @@ export type Settings = {
 };
 
 export type SessionState = {
-  /** Operator-chosen name for the current session, e.g. "Tuesday Open Play". */
+  /** Operator-chosen name for this session, e.g. "Tuesday Open Play". */
   label: string;
-  /** When the current session began (last time it was created/started). */
+  /** When this session was created. */
   startedAt: number;
   players: Player[];
   courts: Court[];
@@ -68,6 +68,26 @@ export type SessionState = {
   queue: string[];
   history: MatchRecord[];
   settings: Settings;
+};
+
+/** A club or organization — owns a history of sessions over time. */
+export type Club = {
+  id: string;
+  name: string;
+  createdAt: number;
+};
+
+/**
+ * One persisted session: the live/ended game data (`SessionState`) plus the
+ * envelope that places it under a club and tracks its lifecycle. `endedAt`
+ * is `null` while the session is active (the only one a club can have at a
+ * time) and set once "End session" is used; ended sessions become
+ * read-only history and are never deleted automatically.
+ */
+export type Session = SessionState & {
+  id: string;
+  clubId: string;
+  endedAt: number | null;
 };
 
 export const playersPerTeam = (mode: GameMode) => (mode === "doubles" ? 2 : 1);

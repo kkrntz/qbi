@@ -1,9 +1,10 @@
 # Pickleball Queue
 
-A court-rotation and player-queue board for open-play pickleball. Check players
-in, let the app pull the next group off the queue onto a free court with
-balanced teams, then record the result and send everyone back into the
-rotation.
+A court-rotation and player-queue board for open-play pickleball clubs. Each
+club keeps its own courts and runs a series of sessions over time — check
+players into a session, let the app pull the next group onto a free court
+with balanced teams, record results, and when the night's done, end the
+session (it becomes permanent, read-only history) and start the next one.
 
 ## Requirements
 
@@ -23,50 +24,67 @@ optional; uncomment only what you need):
 
 - `PORT` — port the dev/production server listens on (Next.js reads this
   natively).
-- `DATA_DIR` — where session data is stored. Relative paths resolve against
-  the project root; absolute paths are used as-is. Useful for a mounted
-  volume in a container, or a separate directory per facility.
+- `DATA_DIR` — where club and session data is stored. Relative paths resolve
+  against the project root; absolute paths are used as-is. Useful for a
+  mounted volume in a container, or a separate directory per facility.
 
 `.env.local` is gitignored; `.env.example` is the committed template.
 
-The session lives in `.data/session.json`, so the board survives a restart and
-every device pointed at the server sees the same queue (the page refetches
-every few seconds).
+Data lives under `.data/` (`clubs.json` plus one `club-sessions/<clubId>.json`
+per club), so it survives a restart and every device pointed at the server
+sees the same state (pages refetch every few seconds). If `.data/session.json`
+exists from a version of this app before clubs existed, it's imported
+automatically into a new "My Club" the first time `/clubs` loads.
 
-### Session lifecycle
+## Clubs and sessions
 
-**End session** in the header opens a summary (duration, players, games) with
-a **Download session data** button — a JSON file with the session's name,
-final player stats, and full match history (player names, not internal ids).
-You can download as many times as you like before committing to anything.
-Name the next session and click **End session & start new** to clear the
-board — courts and mode/winner-priority settings carry over, everything else
-(players, queue, history) is wiped.
+- **`/clubs`** — full CRUD for clubs: create, rename, delete. Each club is
+  independent — its own courts, queue, and session history.
+- **`/clubs/<clubId>`** — a club's home: its active session (if any), a form
+  to start a new one when there isn't, and its five most recent past
+  sessions. A club can only have **one active session at a time** — end it
+  before starting another.
+- **`/clubs/<clubId>/sessions`** — the full session history for a club.
+- **`/clubs/<clubId>/sessions/<sessionId>`** — the dashboard. While active
+  it's the full interactive board described below; once ended it's a
+  read-only summary (duration, final standings, match history, and a
+  **Download session data** button) — ended sessions are kept forever and
+  never deleted automatically (deleting the club deletes its history too, so
+  that's the one irreversible action).
+
+**End session** in the dashboard's header opens a summary with a **Download
+session data** button — a JSON file with the session's name, final player
+stats, and full match history (player names, not internal ids). Download as
+many times as you like before committing; **End session** then marks it
+ended for good. Starting the next session for that club carries over its
+court setup and mode/winner-priority settings, same as before.
 
 ### Self check-in
 
-`/checkin` is a standalone, phone-friendly page players can use to add
-themselves to the queue — no operator needed. Click **Self check-in link** in
-the header to get the shareable URL (copy it, text it, or print it as a QR
-code for court-side signage). After checking in, a player sees their spot in
-line and can hand the device to the next person — or tap **View my status**
-for their own personal, bookmarkable `/p/<id>` page.
+Every session has its own standalone, phone-friendly check-in page at
+`/clubs/<clubId>/sessions/<sessionId>/checkin` — players add themselves to
+the queue, no operator needed. Click **Self check-in link** in the dashboard
+header to get the shareable URL (copy it, text it, or print it as a QR code
+for court-side signage). After checking in, a player sees their spot in line
+and can hand the device to the next person — or tap **View my status** for
+their own personal, bookmarkable status page.
 
 ### Player landing page
 
-`/p/<id>` is a live status page for one checked-in player — reached via
-**View my status** after self check-in. It updates automatically as the
-session changes: while waiting it shows their position in line and a
-**Leave the queue** button; once their match starts it shows the court,
-teammate and opponents, and a live clock; if an operator benches them it
-offers **I'm back — rejoin the queue**. A player who's been checked out (or a
-session that's been reset) sees a friendly prompt to check in again instead
-of an error.
+`/clubs/<clubId>/sessions/<sessionId>/p/<playerId>` is a live status page for
+one checked-in player — reached via **View my status** after self check-in.
+It updates automatically as the session changes: while waiting it shows their
+position in line and a **Leave the queue** button; once their match starts it
+shows the court, teammate and opponents, and a live clock; if an operator
+benches them it offers **I'm back — rejoin the queue**. A player who's been
+checked out sees a friendly prompt to check in again instead of an error, and
+once the session ends everyone's page shows a simple "thanks for playing"
+message instead.
 
 Players checked in by an operator (not via self check-in) don't get this link
 automatically, so a small **🔗** button next to every player's name — in the
 queue, the sitting-out list, and on a live court — copies their personal
-`/p/<id>` link to the clipboard for the operator to hand off.
+status link to the clipboard for the operator to hand off.
 
 ## How the rotation works
 
@@ -108,8 +126,11 @@ queue, the sitting-out list, and on a live court — copies their personal
 
 | Path | Purpose |
 | --- | --- |
-| `src/lib/types.ts` | Domain model and game-mode helpers |
-| `src/lib/store.ts` | File-backed session store, team balancing, all actions |
-| `src/app/api/state` | `GET` the current session |
-| `src/app/api/actions` | `POST` an action, returns the updated session |
+| `src/lib/types.ts` | Domain model: `Player`, `Court`, `Club`, `Session`, settings |
+| `src/lib/store.ts` | Pure reducer — `apply(state, action)` for every in-session mutation; knows nothing about persistence |
+| `src/lib/clubStore.ts` | File-backed persistence for clubs and their session history; calls `apply()` for game actions, migrates a legacy single-session file on first run |
+| `src/lib/teamPicker.ts` | Shared team-balancing/placement logic used by the automatic picker and the manual modals |
+| `src/app/api/clubs` | Club CRUD (`GET`/`POST`), and nested `[clubId]` (`PATCH`/`DELETE`) |
+| `src/app/api/clubs/[clubId]/sessions` | Session list/create, nested `[sessionId]` (get/delete), `/end`, and `/actions` (the game-action dispatch endpoint) |
+| `src/app/clubs` | Club list, club home, session history, the dashboard, self check-in, and player-status pages |
 | `src/components` | Dashboard, court cards, queue and side panels |

@@ -7,9 +7,13 @@ import { PlayerLinkButton } from "./PlayerLinkButton";
 import { Avatar, Empty, SkillChip } from "./ui";
 
 export function BenchPanel({
+  clubId,
+  sessionId,
   benched,
   dispatch,
 }: {
+  clubId: string;
+  sessionId: string;
   benched: Player[];
   dispatch: Dispatch;
 }) {
@@ -34,7 +38,12 @@ export function BenchPanel({
                 {player.name}
               </span>
               <SkillChip skill={player.skill} />
-              <PlayerLinkButton playerId={player.id} playerName={player.name} />
+              <PlayerLinkButton
+                clubId={clubId}
+                sessionId={sessionId}
+                playerId={player.id}
+                playerName={player.name}
+              />
               <button
                 onClick={() =>
                   dispatch({

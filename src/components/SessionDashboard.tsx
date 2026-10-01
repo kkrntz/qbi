@@ -1,8 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession, useTicker } from "@/lib/useSession";
 import { playersPerGame, type Player } from "@/lib/types";
+import { buildSessionExport, downloadJson, sessionFileName } from "@/lib/sessionExport";
 import { AssignPlayersModal } from "./AssignPlayersModal";
 import { CheckInForm } from "./CheckInForm";
 import { CourtCard } from "./CourtCard";
@@ -12,9 +15,18 @@ import { QueuePanel } from "./QueuePanel";
 import { SelfCheckInLink } from "./SelfCheckInLink";
 import { BenchPanel, HistoryPanel, LeaderboardPanel } from "./Panels";
 
-export function SessionDashboard() {
-  const { state, error, dispatch, dismissError } = useSession();
+export function SessionDashboard({
+  clubId,
+  clubName,
+  sessionId,
+}: {
+  clubId: string;
+  clubName: string;
+  sessionId: string;
+}) {
+  const { state, error, dispatch, dismissError } = useSession(clubId, sessionId);
   const now = useTicker();
+  const router = useRouter();
   const [editMatchCourtId, setEditMatchCourtId] = useState<string | null>(null);
   const [assignCourtId, setAssignCourtId] = useState<string | null>(null);
   const [endingSession, setEndingSession] = useState(false);
@@ -38,6 +50,73 @@ export function SessionDashboard() {
     );
   }
 
+  if (state.endedAt !== null) {
+    const durationMinutes = Math.max(
+      0,
+      Math.round((state.endedAt - state.startedAt) / 60000),
+    );
+    const sessionPlayers = new Map(state.players.map((p) => [p.id, p]));
+    return (
+      <div className="mx-auto flex max-w-2xl flex-col gap-4 p-4 sm:p-6">
+        <div>
+          <Link
+            href={`/clubs/${clubId}`}
+            className="text-xs font-medium text-muted hover:text-accent hover:underline"
+          >
+            ← {clubName}
+          </Link>
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+            {state.label || "Session"}
+          </h1>
+          <p className="text-xs text-muted">
+            Ended {new Date(state.endedAt).toLocaleString()} · read-only
+          </p>
+        </div>
+
+        <dl className="panel grid grid-cols-2 gap-3 p-4 text-sm sm:grid-cols-4">
+          <div>
+            <dt className="label">Duration</dt>
+            <dd className="font-semibold">
+              {durationMinutes >= 60
+                ? `${Math.floor(durationMinutes / 60)}h ${durationMinutes % 60}m`
+                : `${durationMinutes}m`}
+            </dd>
+          </div>
+          <div>
+            <dt className="label">Players</dt>
+            <dd className="font-semibold">{state.players.length}</dd>
+          </div>
+          <div>
+            <dt className="label">Games played</dt>
+            <dd className="font-semibold">{state.history.length}</dd>
+          </div>
+          <div>
+            <dt className="label">Courts</dt>
+            <dd className="font-semibold">{state.courts.length}</dd>
+          </div>
+        </dl>
+
+        <button
+          onClick={() =>
+            downloadJson(sessionFileName(state), buildSessionExport(state))
+          }
+          className="btn"
+        >
+          Download session data
+        </button>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="panel p-4">
+            <LeaderboardPanel players={state.players} />
+          </div>
+          <div className="panel p-4">
+            <HistoryPanel history={state.history} players={sessionPlayers} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const { courts, queue, settings, history } = state;
   const benched = state.players.filter((p) => p.status === "benched");
   const playing = state.players.filter((p) => p.status === "playing").length;
@@ -48,8 +127,14 @@ export function SessionDashboard() {
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4 p-4 sm:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
+          <Link
+            href={`/clubs/${clubId}`}
+            className="text-xs font-medium text-muted hover:text-accent hover:underline"
+          >
+            ← {clubName}
+          </Link>
           <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-            <span className="text-ball">●</span> {state.label || "Pickleball Queue"}
+            <span className="text-ball">●</span> {state.label || "Session"}
           </h1>
           <p className="text-xs text-muted">
             {state.players.length} checked in · {playing} on court ·{" "}
@@ -102,7 +187,7 @@ export function SessionDashboard() {
             + Court
           </button>
 
-          <SelfCheckInLink />
+          <SelfCheckInLink clubId={clubId} sessionId={sessionId} />
 
           <button
             onClick={() => setEndingSession(true)}
@@ -132,6 +217,8 @@ export function SessionDashboard() {
             {courts.map((court) => (
               <CourtCard
                 key={court.id}
+                clubId={clubId}
+                sessionId={sessionId}
                 court={court}
                 players={players}
                 gameMode={settings.gameMode}
@@ -174,6 +261,8 @@ export function SessionDashboard() {
 
           <div className="panel p-4">
             <QueuePanel
+              clubId={clubId}
+              sessionId={sessionId}
               queue={queue}
               players={players}
               gameMode={settings.gameMode}
@@ -183,7 +272,12 @@ export function SessionDashboard() {
           </div>
 
           <div className="panel p-4">
-            <BenchPanel benched={benched} dispatch={dispatch} />
+            <BenchPanel
+              clubId={clubId}
+              sessionId={sessionId}
+              benched={benched}
+              dispatch={dispatch}
+            />
           </div>
 
           <p className="px-1 text-[11px] text-muted">
@@ -232,8 +326,8 @@ export function SessionDashboard() {
       {endingSession && (
         <EndSessionModal
           state={state}
-          dispatch={dispatch}
           onClose={() => setEndingSession(false)}
+          onEnded={() => router.push(`/clubs/${clubId}`)}
         />
       )}
     </div>

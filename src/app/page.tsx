@@ -1,5 +1,5 @@
-import { SessionDashboard } from "@/components/SessionDashboard";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <SessionDashboard />;
+  redirect("/clubs");
 }

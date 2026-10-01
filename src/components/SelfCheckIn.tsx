@@ -5,8 +5,14 @@ import Link from "next/link";
 import { useSession } from "@/lib/useSession";
 import { SKILLS, type Skill } from "@/lib/types";
 
-export function SelfCheckIn() {
-  const { state, error, dispatch, dismissError } = useSession();
+export function SelfCheckIn({
+  clubId,
+  sessionId,
+}: {
+  clubId: string;
+  sessionId: string;
+}) {
+  const { state, error, dispatch, dismissError } = useSession(clubId, sessionId);
   const [name, setName] = useState("");
   const [skill, setSkill] = useState<Skill>("intermediate");
   const [submitting, setSubmitting] = useState(false);
@@ -41,6 +47,18 @@ export function SelfCheckIn() {
     setName("");
   }
 
+  if (state && state.endedAt !== null) {
+    return (
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-3 p-6 text-center">
+        <span className="text-4xl">🏁</span>
+        <h1 className="text-xl font-bold">This session has ended</h1>
+        <p className="text-sm text-muted">
+          Check-in is closed. Ask an operator for the link to a new session.
+        </p>
+      </div>
+    );
+  }
+
   if (checkedIn) {
     return (
       <div className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 p-6 text-center">
@@ -58,7 +76,10 @@ export function SelfCheckIn() {
           </p>
         )}
         {checkedIn.id && (
-          <Link href={`/p/${checkedIn.id}`} className="btn btn-primary mt-2 w-full max-w-xs">
+          <Link
+            href={`/clubs/${clubId}/sessions/${sessionId}/p/${checkedIn.id}`}
+            className="btn btn-primary mt-2 w-full max-w-xs"
+          >
             View my status
           </Link>
         )}

@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 
-export function SelfCheckInLink() {
+export function SelfCheckInLink({
+  clubId,
+  sessionId,
+}: {
+  clubId: string;
+  sessionId: string;
+}) {
   const [open, setOpen] = useState(false);
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
@@ -11,7 +17,8 @@ export function SelfCheckInLink() {
     setOrigin(window.location.origin);
   }, []);
 
-  const url = origin ? `${origin}/checkin` : "";
+  const path = `/clubs/${clubId}/sessions/${sessionId}/checkin`;
+  const url = origin ? `${origin}${path}` : "";
 
   async function copy() {
     if (!url) return;
@@ -57,7 +64,7 @@ export function SelfCheckInLink() {
           </div>
           {url && (
             <a
-              href="/checkin"
+              href={path}
               target="_blank"
               rel="noreferrer"
               className="text-center text-xs font-medium text-accent hover:underline"

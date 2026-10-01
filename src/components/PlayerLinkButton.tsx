@@ -3,14 +3,18 @@
 import { useState } from "react";
 
 /**
- * Small icon button that copies a player's personal /p/[id] status link to
- * the clipboard, so an operator can hand it to a player they checked in
+ * Small icon button that copies a player's personal status link to the
+ * clipboard, so an operator can hand it to a player they checked in
  * themselves (self check-in links to it automatically on check-in).
  */
 export function PlayerLinkButton({
+  clubId,
+  sessionId,
   playerId,
   playerName,
 }: {
+  clubId: string;
+  sessionId: string;
   playerId: string;
   playerName: string;
 }) {
@@ -18,7 +22,7 @@ export function PlayerLinkButton({
 
   async function copy(event: React.MouseEvent) {
     event.stopPropagation();
-    const url = `${window.location.origin}/p/${playerId}`;
+    const url = `${window.location.origin}/clubs/${clubId}/sessions/${sessionId}/p/${playerId}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);

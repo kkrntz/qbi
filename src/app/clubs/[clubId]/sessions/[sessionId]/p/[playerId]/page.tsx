@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 export default async function PlayerPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ clubId: string; sessionId: string; playerId: string }>;
 }) {
-  const { id } = await params;
-  return <PlayerStatus playerId={id} />;
+  const { clubId, sessionId, playerId } = await params;
+  return <PlayerStatus clubId={clubId} sessionId={sessionId} playerId={playerId} />;
 }

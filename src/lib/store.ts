@@ -1,5 +1,3 @@
-import { promises as fs } from "fs";
-import path from "path";
 import { randomUUID } from "crypto";
 import {
   Court,
@@ -14,81 +12,19 @@ import {
 } from "./types";
 import { balanceTeams } from "./teamPicker";
 
-// Override with DATA_DIR in .env.local to store session data somewhere else
-// (a mounted volume in a container, a separate dir per facility, etc).
-// Relative paths resolve against the project root; absolute paths are used
-// as-is.
-const DATA_DIR = process.env.DATA_DIR
-  ? path.resolve(process.env.DATA_DIR)
-  : path.join(process.cwd(), ".data");
-const DATA_FILE = path.join(DATA_DIR, "session.json");
+/**
+ * Pure game-session reducer: `apply(state, action)` mutates `state` in
+ * place (or throws on an invalid action) and knows nothing about where a
+ * session is stored. Persistence, clubs, and session history live in
+ * `clubStore.ts`, which calls this for every mutation.
+ */
 
-const court = (name: string): Court => ({
+export const court = (name: string): Court => ({
   id: randomUUID(),
   name,
   closed: false,
   match: null,
 });
-
-const initialState = (label = ""): SessionState => ({
-  label,
-  startedAt: Date.now(),
-  players: [],
-  courts: [court("Court 1"), court("Court 2")],
-  queue: [],
-  history: [],
-  // Queue is first-come-first-served by default, with winners given priority
-  // back to the front of the line instead of the back.
-  settings: { gameMode: "doubles", winnersStay: true },
-});
-
-async function load(): Promise<SessionState> {
-  try {
-    const raw = await fs.readFile(DATA_FILE, "utf8");
-    const parsed = JSON.parse(raw) as Partial<SessionState>;
-    // Backfill fields added after some sessions were already saved to disk.
-    return {
-      ...initialState(),
-      ...parsed,
-      label: parsed.label ?? "",
-      startedAt: parsed.startedAt ?? Date.now(),
-    };
-  } catch {
-    return initialState();
-  }
-}
-
-async function save(state: SessionState): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(DATA_FILE, JSON.stringify(state, null, 2), "utf8");
-}
-
-/**
- * Serializes reads and writes so two concurrent requests can't clobber each
- * other's view of the session file.
- */
-let chain: Promise<unknown> = Promise.resolve();
-
-function withLock<T>(fn: () => Promise<T>): Promise<T> {
-  const run = chain.then(fn, fn);
-  chain = run.catch(() => undefined);
-  return run;
-}
-
-export function getState(): Promise<SessionState> {
-  return withLock(load);
-}
-
-export function mutate(
-  fn: (state: SessionState) => void,
-): Promise<SessionState> {
-  return withLock(async () => {
-    const state = await load();
-    fn(state);
-    await save(state);
-    return state;
-  });
-}
 
 // --- helpers ---------------------------------------------------------------
 
@@ -161,8 +97,7 @@ export type Action =
   | { type: "endGame"; courtId: string; winner: Winner }
   | { type: "cancelGame"; courtId: string }
   | { type: "setGameMode"; gameMode: GameMode }
-  | { type: "setWinnersStay"; winnersStay: boolean }
-  | { type: "startSession"; label: string };
+  | { type: "setWinnersStay"; winnersStay: boolean };
 
 export function apply(state: SessionState, action: Action): void {
   switch (action.type) {
@@ -429,15 +364,5 @@ export function apply(state: SessionState, action: Action): void {
     case "setWinnersStay":
       state.settings.winnersStay = action.winnersStay;
       return;
-
-    case "startSession": {
-      const fresh = initialState(action.label.trim());
-      // Court setup (names, closed flags) is facility-level, not tied to one
-      // session, so it carries over; so do the operator's mode preferences.
-      fresh.courts = state.courts.map((c) => ({ ...c, match: null }));
-      fresh.settings = state.settings;
-      Object.assign(state, fresh);
-      return;
-    }
   }
 }
