@@ -15,6 +15,8 @@ export function UsersManager({ currentUser }: { currentUser: PublicUser }) {
   const [role, setRole] = useState<Role>("club_admin");
   const [clubIds, setClubIds] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
+  const [newClubName, setNewClubName] = useState("");
+  const [creatingClub, setCreatingClub] = useState(false);
 
   async function refresh() {
     try {
@@ -37,6 +39,29 @@ export function UsersManager({ currentUser }: { currentUser: PublicUser }) {
 
   function toggleClub(id: string) {
     setClubIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+  }
+
+  async function createClubInline() {
+    if (!newClubName.trim() || creatingClub) return;
+    setCreatingClub(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/clubs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newClubName }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.error ?? "Could not create the club.");
+      const club = body as Club;
+      setClubs((prev) => [...prev, club].sort((a, b) => a.name.localeCompare(b.name)));
+      setClubIds((prev) => [...prev, club.id]);
+      setNewClubName("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create the club.");
+    } finally {
+      setCreatingClub(false);
+    }
   }
 
   async function createUser(event: React.FormEvent) {
@@ -163,9 +188,9 @@ export function UsersManager({ currentUser }: { currentUser: PublicUser }) {
           <div>
             <span className="label mb-1.5 block">Clubs they administer</span>
             {clubs.length === 0 ? (
-              <p className="text-xs text-muted">No clubs exist yet.</p>
+              <p className="mb-2 text-xs text-muted">No clubs exist yet — add one below.</p>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="mb-2 flex flex-wrap gap-1.5">
                 {clubs.map((club) => (
                   <button
                     key={club.id}
@@ -182,6 +207,30 @@ export function UsersManager({ currentUser }: { currentUser: PublicUser }) {
                 ))}
               </div>
             )}
+            <div className="flex gap-1.5">
+              <input
+                value={newClubName}
+                onChange={(e) => setNewClubName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void createClubInline();
+                  }
+                }}
+                placeholder="New club name"
+                aria-label="New club name"
+                className="min-w-0 flex-1 rounded-lg border border-border bg-inset px-2.5 py-1.5
+                  text-xs text-text outline-none placeholder:text-muted focus:border-accent"
+              />
+              <button
+                type="button"
+                onClick={() => void createClubInline()}
+                className="btn px-2.5 py-1.5 text-xs"
+                disabled={!newClubName.trim() || creatingClub}
+              >
+                {creatingClub ? "Adding…" : "+ Add club"}
+              </button>
+            </div>
           </div>
         )}
 
