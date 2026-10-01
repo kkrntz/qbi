@@ -44,13 +44,15 @@ automatically into a new "My Club" the first time `/clubs` loads.
   to start a new one when there isn't, and its five most recent past
   sessions. A club can only have **one active session at a time** — end it
   before starting another.
-- **`/clubs/<clubId>/sessions`** — the full session history for a club.
+- **`/clubs/<clubId>/sessions`** — the full session history for a club. A
+  **×** next to any session (active or ended) permanently deletes it and its
+  match history; a stronger warning appears if it's still active.
 - **`/clubs/<clubId>/sessions/<sessionId>`** — the dashboard. While active
   it's the full interactive board described below; once ended it's a
-  read-only summary (duration, final standings, match history, and a
-  **Download session data** button) — ended sessions are kept forever and
-  never deleted automatically (deleting the club deletes its history too, so
-  that's the one irreversible action).
+  read-only summary (duration, final standings, match history, a **Download
+  session data** button, and a **Delete session** button). Ended sessions are
+  kept forever unless explicitly deleted (deleting the club deletes all of
+  its session history too).
 
 **End session** in the dashboard's header opens a summary with a **Download
 session data** button — a JSON file with the session's name, final player

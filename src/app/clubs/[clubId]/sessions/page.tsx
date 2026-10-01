@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClub, listSessions } from "@/lib/clubStore";
+import { SessionHistoryList } from "@/components/SessionHistoryList";
 
 export default async function SessionHistoryPage({
   params,
@@ -28,39 +29,7 @@ export default async function SessionHistoryPage({
         <p className="text-xs text-muted">{sessions.length} total</p>
       </div>
 
-      {sessions.length === 0 ? (
-        <div className="panel p-6 text-center text-sm text-muted">
-          No sessions yet.
-        </div>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {sessions.map((session) => (
-            <li key={session.id}>
-              <Link
-                href={`/clubs/${clubId}/sessions/${session.id}`}
-                className="panel flex items-center justify-between gap-3 p-3 hover:border-accent"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="truncate text-sm font-semibold">
-                      {session.label || "Untitled session"}
-                    </span>
-                    {session.endedAt === null && (
-                      <span className="chip bg-ball text-ball-ink">live</span>
-                    )}
-                  </div>
-                  <span className="text-xs text-muted">
-                    {new Date(session.startedAt).toLocaleString()}
-                  </span>
-                </div>
-                <span className="shrink-0 text-xs text-muted">
-                  {session.players.length} players · {session.history.length} games
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <SessionHistoryList clubId={clubId} initialSessions={sessions} />
     </div>
   );
 }

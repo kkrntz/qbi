@@ -30,6 +30,31 @@ export function SessionDashboard({
   const [editMatchCourtId, setEditMatchCourtId] = useState<string | null>(null);
   const [assignCourtId, setAssignCourtId] = useState<string | null>(null);
   const [endingSession, setEndingSession] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function deleteSession() {
+    if (
+      !state ||
+      !confirm(
+        `Permanently delete "${state.label || "this session"}"? This can't be undone.`,
+      )
+    )
+      return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/clubs/${clubId}/sessions/${sessionId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body?.error ?? "Could not delete the session.");
+      }
+      router.push(`/clubs/${clubId}`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Could not delete the session.");
+      setDeleting(false);
+    }
+  }
 
   const players = useMemo(
     () => new Map((state?.players ?? []).map((p) => [p.id, p])),
@@ -96,14 +121,23 @@ export function SessionDashboard({
           </div>
         </dl>
 
-        <button
-          onClick={() =>
-            downloadJson(sessionFileName(state), buildSessionExport(state))
-          }
-          className="btn"
-        >
-          Download session data
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() =>
+              downloadJson(sessionFileName(state), buildSessionExport(state))
+            }
+            className="btn flex-1"
+          >
+            Download session data
+          </button>
+          <button
+            onClick={() => void deleteSession()}
+            className="btn btn-danger"
+            disabled={deleting}
+          >
+            {deleting ? "Deleting…" : "Delete session"}
+          </button>
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="panel p-4">
