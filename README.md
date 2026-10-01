@@ -33,7 +33,10 @@ session.
   matches, it swaps the two lowest-priority slots for the next two queued
   players instead of repeating the same group (one slot if only one
   replacement is available) — the longest-waiting players in the group keep
-  their spot whenever possible.
+  their spot whenever possible. **Choose players…** opens a manual picker
+  instead: select exactly who plays, from anyone currently waiting (not just
+  the front of the line), and assign them to either team yourself — all the
+  automatic ordering above is bypassed for that game.
 - **Won / End, no winner** records the game, credits games played and wins, and
   returns everyone to the back of the queue — nobody cuts ahead of players
   who were already waiting. **Winner priority** decides the order of the two

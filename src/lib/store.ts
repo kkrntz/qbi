@@ -163,6 +163,7 @@ export type Action =
   | { type: "removeCourt"; courtId: string }
   | { type: "setCourtClosed"; courtId: string; closed: boolean }
   | { type: "startGame"; courtId: string }
+  | { type: "startCustomGame"; courtId: string; teamA: string[]; teamB: string[] }
   | { type: "endGame"; courtId: string; winner: Winner }
   | { type: "cancelGame"; courtId: string }
   | { type: "setGameMode"; gameMode: GameMode }
@@ -285,6 +286,45 @@ export function apply(state: SessionState, action: Action): void {
         player.queuedAt = null;
       }
       target.match = { id: randomUUID(), teamA, teamB, startedAt: Date.now() };
+      return;
+    }
+
+    case "startCustomGame": {
+      const target = state.courts.find((c) => c.id === action.courtId);
+      if (!target) throw new Error("That court no longer exists.");
+      if (target.match) throw new Error(`${target.name} is already busy.`);
+      if (target.closed) throw new Error(`${target.name} is closed.`);
+
+      const perTeam = playersPerTeam(state.settings.gameMode);
+      if (action.teamA.length !== perTeam || action.teamB.length !== perTeam)
+        throw new Error(
+          `${state.settings.gameMode === "doubles" ? "Doubles" : "Singles"} needs ${perTeam} player${perTeam > 1 ? "s" : ""} per team.`,
+        );
+
+      const allIds = [...action.teamA, ...action.teamB];
+      if (new Set(allIds).size !== allIds.length)
+        throw new Error("A player can only be on one team.");
+
+      const chosen = allIds.map((id) => {
+        const player = byId(state, id);
+        if (!player) throw new Error("One of the selected players no longer exists.");
+        if (player.status !== "waiting")
+          throw new Error(`${player.name} isn't available to play right now.`);
+        return player;
+      });
+
+      const chosenSet = new Set(allIds);
+      state.queue = state.queue.filter((id) => !chosenSet.has(id));
+      for (const player of chosen) {
+        player.status = "playing";
+        player.queuedAt = null;
+      }
+      target.match = {
+        id: randomUUID(),
+        teamA: action.teamA,
+        teamB: action.teamB,
+        startedAt: Date.now(),
+      };
       return;
     }
 
