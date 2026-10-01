@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
-  if (user) redirect(user.role === "super_admin" ? "/dashboard" : `/clubs/${user.clubIds[0] ?? ""}`);
+  if (user) redirect("/dashboard");
 
   const needsSetup = (await listUsers()).length === 0;
   return <LoginForm needsSetup={needsSetup} />;

@@ -3,6 +3,5 @@ import { getCurrentUser } from "@/lib/session";
 
 export default async function Home() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  redirect(user.role === "super_admin" ? "/dashboard" : `/clubs/${user.clubIds[0] ?? ""}`);
+  redirect(user ? "/dashboard" : "/login");
 }

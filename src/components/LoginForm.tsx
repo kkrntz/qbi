@@ -22,7 +22,7 @@ export function LoginForm({ needsSetup }: { needsSetup: boolean }) {
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body?.error ?? "That didn't work.");
-      router.push(body.role === "super_admin" ? "/dashboard" : `/clubs/${body.clubIds?.[0] ?? ""}`);
+      router.push("/dashboard");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "That didn't work.");

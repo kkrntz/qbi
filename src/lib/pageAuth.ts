@@ -11,11 +11,11 @@ export async function requirePageUser(): Promise<User> {
 }
 
 /** View access: signed in and either super_admin or a club_admin for
- * `clubId`; otherwise redirects to /login (not signed in) or /clubs (signed
- * in, wrong club). */
+ * `clubId`; otherwise redirects to /login (not signed in) or /dashboard
+ * (signed in, wrong club). */
 export async function requirePageClubAccess(clubId: string): Promise<User> {
   const user = await requirePageUser();
-  if (!canAccessClub(user, clubId)) redirect("/clubs");
+  if (!canAccessClub(user, clubId)) redirect("/dashboard");
   return user;
 }
 
@@ -25,12 +25,12 @@ export async function requirePageClubAccess(clubId: string): Promise<User> {
  * gameplay, not for the read-only session dashboard itself. */
 export async function requirePageClubManager(clubId: string): Promise<User> {
   const user = await requirePageUser();
-  if (!canManageClub(user, clubId)) redirect("/clubs");
+  if (!canManageClub(user, clubId)) redirect("/dashboard");
   return user;
 }
 
 export async function requirePageSuperAdmin(): Promise<User> {
   const user = await requirePageUser();
-  if (user.role !== "super_admin") redirect("/clubs");
+  if (user.role !== "super_admin") redirect("/dashboard");
   return user;
 }
