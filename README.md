@@ -26,7 +26,11 @@ session.
 - **Check in** adds a player to the back of the queue with a skill level.
 - **Start next game** takes the first 4 players in line (2 in singles mode) and
   splits them into even teams, pairing the strongest available player with the
-  weakest.
+  weakest. If that exact foursome played together in one of the last couple of
+  matches, it swaps in the next queued player instead of repeating the same
+  group — only when the queue has someone else available, and only the
+  lowest-priority slot moves, so the longest-waiting players keep their spot
+  whenever possible.
 - **Won / End, no winner** records the game, credits games played and wins, and
   returns everyone to the back of the queue — nobody cuts ahead of players
   who were already waiting. **Winner priority** decides the order of the two

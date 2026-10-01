@@ -94,6 +94,42 @@ function enqueue(state: SessionState, id: string, front = false) {
   player.queuedAt = Date.now();
 }
 
+/** How many of the most recent finished matches count as "too soon" to repeat. */
+const REPEAT_LOOKBACK = 2;
+
+const groupOf = (ids: string[]) => new Set(ids);
+const isSameGroup = (ids: string[], group: Set<string>) =>
+  ids.length === group.size && ids.every((id) => group.has(id));
+
+/**
+ * Picks the next `needed` players off the front of the queue, but — as much
+ * as the queue allows — avoids handing back the exact same foursome that
+ * played together in one of the last few matches. Only the single
+ * lowest-priority slot in the group is swapped (searching deeper into the
+ * queue for a replacement), so the players who have waited longest keep
+ * their spot whenever possible; if no swap breaks the repeat, the front of
+ * the queue plays anyway.
+ */
+function pickUpNextGroup(state: SessionState, needed: number): string[] {
+  const recentGroups = state.history
+    .slice(0, REPEAT_LOOKBACK)
+    .map((match) => groupOf([...match.teamA, ...match.teamB]));
+
+  const group = state.queue.slice(0, needed);
+  if (!recentGroups.some((recent) => isSameGroup(group, recent))) return group;
+
+  for (let outIdx = needed - 1; outIdx >= 0; outIdx--) {
+    for (let i = needed; i < state.queue.length; i++) {
+      const trial = [...group];
+      trial[outIdx] = state.queue[i];
+      if (!recentGroups.some((recent) => isSameGroup(trial, recent))) {
+        return trial;
+      }
+    }
+  }
+  return group; // No alternative breaks the repeat — play it anyway.
+}
+
 /**
  * Splits players into two teams of even strength by pairing the strongest
  * remaining player with the weakest one.
@@ -223,18 +259,19 @@ export function apply(state: SessionState, action: Action): void {
       if (target.closed) throw new Error(`${target.name} is closed.`);
 
       const needed = playersPerGame(state.settings.gameMode);
-      const upNextIds = state.queue.slice(0, needed);
-      if (upNextIds.length < needed)
+      if (state.queue.length < needed)
         throw new Error(
           `Need ${needed} players in the queue to start a ${state.settings.gameMode} game.`,
         );
 
+      const upNextIds = pickUpNextGroup(state, needed);
       const upNext = upNextIds
         .map((id) => byId(state, id))
         .filter((p): p is Player => Boolean(p));
       const { teamA, teamB } = balanceTeams(upNext, state.settings.gameMode);
 
-      state.queue = state.queue.slice(needed);
+      const chosen = new Set(upNextIds);
+      state.queue = state.queue.filter((id) => !chosen.has(id));
       for (const player of upNext) {
         player.status = "playing";
         player.queuedAt = null;
