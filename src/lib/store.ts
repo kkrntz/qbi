@@ -24,7 +24,9 @@ const court = (name: string): Court => ({
   match: null,
 });
 
-const initialState = (): SessionState => ({
+const initialState = (label = ""): SessionState => ({
+  label,
+  startedAt: Date.now(),
   players: [],
   courts: [court("Court 1"), court("Court 2")],
   queue: [],
@@ -37,7 +39,14 @@ const initialState = (): SessionState => ({
 async function load(): Promise<SessionState> {
   try {
     const raw = await fs.readFile(DATA_FILE, "utf8");
-    return JSON.parse(raw) as SessionState;
+    const parsed = JSON.parse(raw) as Partial<SessionState>;
+    // Backfill fields added after some sessions were already saved to disk.
+    return {
+      ...initialState(),
+      ...parsed,
+      label: parsed.label ?? "",
+      startedAt: parsed.startedAt ?? Date.now(),
+    };
   } catch {
     return initialState();
   }
@@ -147,7 +156,7 @@ export type Action =
   | { type: "cancelGame"; courtId: string }
   | { type: "setGameMode"; gameMode: GameMode }
   | { type: "setWinnersStay"; winnersStay: boolean }
-  | { type: "resetSession" };
+  | { type: "startSession"; label: string };
 
 export function apply(state: SessionState, action: Action): void {
   switch (action.type) {
@@ -415,8 +424,10 @@ export function apply(state: SessionState, action: Action): void {
       state.settings.winnersStay = action.winnersStay;
       return;
 
-    case "resetSession": {
-      const fresh = initialState();
+    case "startSession": {
+      const fresh = initialState(action.label.trim());
+      // Court setup (names, closed flags) is facility-level, not tied to one
+      // session, so it carries over; so do the operator's mode preferences.
       fresh.courts = state.courts.map((c) => ({ ...c, match: null }));
       fresh.settings = state.settings;
       Object.assign(state, fresh);

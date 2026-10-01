@@ -58,6 +58,10 @@ export type Settings = {
 };
 
 export type SessionState = {
+  /** Operator-chosen name for the current session, e.g. "Tuesday Open Play". */
+  label: string;
+  /** When the current session began (last time it was created/started). */
+  startedAt: number;
   players: Player[];
   courts: Court[];
   /** Ordered player ids waiting to play. Index 0 plays next. */

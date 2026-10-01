@@ -7,6 +7,7 @@ import { AssignPlayersModal } from "./AssignPlayersModal";
 import { CheckInForm } from "./CheckInForm";
 import { CourtCard } from "./CourtCard";
 import { EditMatchModal } from "./EditMatchModal";
+import { EndSessionModal } from "./EndSessionModal";
 import { QueuePanel } from "./QueuePanel";
 import { SelfCheckInLink } from "./SelfCheckInLink";
 import { BenchPanel, HistoryPanel, LeaderboardPanel } from "./Panels";
@@ -16,6 +17,7 @@ export function SessionDashboard() {
   const now = useTicker();
   const [editMatchCourtId, setEditMatchCourtId] = useState<string | null>(null);
   const [assignCourtId, setAssignCourtId] = useState<string | null>(null);
+  const [endingSession, setEndingSession] = useState(false);
 
   const players = useMemo(
     () => new Map((state?.players ?? []).map((p) => [p.id, p])),
@@ -47,7 +49,7 @@ export function SessionDashboard() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-            <span className="text-ball">●</span> Pickleball Queue
+            <span className="text-ball">●</span> {state.label || "Pickleball Queue"}
           </h1>
           <p className="text-xs text-muted">
             {state.players.length} checked in · {playing} on court ·{" "}
@@ -103,13 +105,10 @@ export function SessionDashboard() {
           <SelfCheckInLink />
 
           <button
-            onClick={() => {
-              if (confirm("Clear all players, games and stats?"))
-                dispatch({ type: "resetSession" });
-            }}
+            onClick={() => setEndingSession(true)}
             className="btn btn-danger text-xs"
           >
-            Reset
+            End session
           </button>
         </div>
       </header>
@@ -229,6 +228,14 @@ export function SessionDashboard() {
             />
           );
         })()}
+
+      {endingSession && (
+        <EndSessionModal
+          state={state}
+          dispatch={dispatch}
+          onClose={() => setEndingSession(false)}
+        />
+      )}
     </div>
   );
 }

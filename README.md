@@ -18,8 +18,17 @@ npm run dev       # http://localhost:3000
 
 The session lives in `.data/session.json`, so the board survives a restart and
 every device pointed at the server sees the same queue (the page refetches
-every few seconds). Delete that file — or hit **Reset** — to start a fresh
-session.
+every few seconds).
+
+### Session lifecycle
+
+**End session** in the header opens a summary (duration, players, games) with
+a **Download session data** button — a JSON file with the session's name,
+final player stats, and full match history (player names, not internal ids).
+You can download as many times as you like before committing to anything.
+Name the next session and click **End session & start new** to clear the
+board — courts and mode/winner-priority settings carry over, everything else
+(players, queue, history) is wiped.
 
 ### Self check-in
 
