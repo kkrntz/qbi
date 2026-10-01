@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pickleball Queue
 
-## Getting Started
+A court-rotation and player-queue board for open-play pickleball. Check players
+in, let the app pull the next group off the queue onto a free court with
+balanced teams, then record the result and send everyone back into the
+rotation.
 
-First, run the development server:
+## Requirements
+
+Node 20+ (a `.nvmrc` pins 22). With nvm: `nvm use`.
+
+## Running
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev       # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The session lives in `.data/session.json`, so the board survives a restart and
+every device pointed at the server sees the same queue (the page refetches
+every few seconds). Delete that file — or hit **Reset** — to start a fresh
+session.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How the rotation works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Check in** adds a player to the back of the queue with a skill level.
+- **Start next game** takes the first 4 players in line (2 in singles mode) and
+  splits them into even teams, pairing the strongest available player with the
+  weakest.
+- **Won / End, no winner** records the game, credits games played and wins, and
+  returns everyone to the queue — losers first, so the side that has been
+  waiting longest plays again sooner.
+- **Winners stay** instead puts the winning team back at the front of the line.
+- **Cancel** returns a court's players to the front of the queue without
+  recording a game.
+- Queue rows can be reordered, benched (sit out without losing your spot in the
+  roster), or checked out entirely.
+- Courts can be added, closed to take them out of rotation, or removed.
 
-## Learn More
+## Layout
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Path | Purpose |
+| --- | --- |
+| `src/lib/types.ts` | Domain model and game-mode helpers |
+| `src/lib/store.ts` | File-backed session store, team balancing, all actions |
+| `src/app/api/state` | `GET` the current session |
+| `src/app/api/actions` | `POST` an action, returns the updated session |
+| `src/components` | Dashboard, court cards, queue and side panels |

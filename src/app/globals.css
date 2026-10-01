@@ -1,26 +1,92 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --surface: #f1f4f8;
+  --panel: #ffffff;
+  --inset: #eef2f7;
+  --border: #d9e0ea;
+  --text: #0f1620;
+  --muted: #5d6b7e;
+  --accent: #0d7267;
+  --accent-ink: #ffffff;
+  --accent-soft: #d3f2ec;
+  --ball: #a8c400;
+  --ball-ink: #273000;
+  --danger: #a7262d;
+  --danger-soft: #fbe3e4;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --surface: #0b1017;
+    --panel: #141b25;
+    --inset: #1b2430;
+    --border: #273341;
+    --text: #e8edf4;
+    --muted: #93a1b4;
+    --accent: #2bbfa9;
+    --accent-ink: #06231f;
+    --accent-soft: #13342f;
+    --ball: #c6e400;
+    --ball-ink: #1d2400;
+    --danger: #ef6f74;
+    --danger-soft: #35191c;
   }
 }
 
+@theme inline {
+  --color-surface: var(--surface);
+  --color-panel: var(--panel);
+  --color-inset: var(--inset);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-ball: var(--ball);
+  --color-ball-ink: var(--ball-ink);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--surface);
+  color: var(--text);
+}
+
+@layer components {
+  .panel {
+    @apply rounded-2xl border border-border bg-panel;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-border
+      bg-inset px-3 py-2 text-sm font-medium text-text transition
+      hover:border-accent hover:text-accent
+      disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border
+      disabled:hover:text-text;
+  }
+  .btn-primary {
+    @apply border-transparent bg-accent text-accent-ink hover:border-transparent
+      hover:bg-accent hover:text-accent-ink hover:brightness-110;
+  }
+  .btn-ball {
+    @apply border-transparent bg-ball text-ball-ink hover:border-transparent
+      hover:bg-ball hover:text-ball-ink hover:brightness-105;
+  }
+  .btn-danger {
+    @apply hover:border-danger hover:text-danger;
+  }
+  .btn-icon {
+    @apply h-8 w-8 p-0 text-base leading-none;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-[11px]
+      font-semibold uppercase tracking-wide;
+  }
+  .label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-muted;
+  }
 }
