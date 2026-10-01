@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useSession } from "@/lib/useSession";
 import { SKILLS, type Skill } from "@/lib/types";
 
@@ -9,9 +10,11 @@ export function SelfCheckIn() {
   const [name, setName] = useState("");
   const [skill, setSkill] = useState<Skill>("intermediate");
   const [submitting, setSubmitting] = useState(false);
-  const [checkedIn, setCheckedIn] = useState<{ name: string; position: number | null } | null>(
-    null,
-  );
+  const [checkedIn, setCheckedIn] = useState<{
+    id: string | null;
+    name: string;
+    position: number | null;
+  } | null>(null);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -30,7 +33,11 @@ export function SelfCheckIn() {
       .sort((a, b) => b.checkedInAt - a.checkedInAt)[0];
     const position = mine ? next.queue.indexOf(mine.id) + 1 : null;
 
-    setCheckedIn({ name: trimmed, position: position && position > 0 ? position : null });
+    setCheckedIn({
+      id: mine?.id ?? null,
+      name: trimmed,
+      position: position && position > 0 ? position : null,
+    });
     setName("");
   }
 
@@ -50,9 +57,14 @@ export function SelfCheckIn() {
             {state.courts.length} courts in play
           </p>
         )}
+        {checkedIn.id && (
+          <Link href={`/p/${checkedIn.id}`} className="btn btn-primary mt-2 w-full max-w-xs">
+            View my status
+          </Link>
+        )}
         <button
           onClick={() => setCheckedIn(null)}
-          className="btn btn-primary mt-2 w-full max-w-xs"
+          className="btn w-full max-w-xs"
         >
           Check in another player
         </button>

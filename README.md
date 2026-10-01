@@ -27,7 +27,19 @@ session.
 themselves to the queue — no operator needed. Click **Self check-in link** in
 the header to get the shareable URL (copy it, text it, or print it as a QR
 code for court-side signage). After checking in, a player sees their spot in
-line and can hand the device to the next person.
+line and can hand the device to the next person — or tap **View my status**
+for their own personal, bookmarkable `/p/<id>` page.
+
+### Player landing page
+
+`/p/<id>` is a live status page for one checked-in player — reached via
+**View my status** after self check-in. It updates automatically as the
+session changes: while waiting it shows their position in line and a
+**Leave the queue** button; once their match starts it shows the court,
+teammate and opponents, and a live clock; if an operator benches them it
+offers **I'm back — rejoin the queue**. A player who's been checked out (or a
+session that's been reset) sees a friendly prompt to check in again instead
+of an error.
 
 ## How the rotation works
 
