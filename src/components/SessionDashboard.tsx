@@ -74,9 +74,13 @@ export function SessionDashboard() {
             }
             className={`btn text-xs ${settings.winnersStay ? "btn-primary" : ""}`}
             aria-pressed={settings.winnersStay}
-            title="Winners go back to the front of the queue"
+            title={
+              settings.winnersStay
+                ? "On: winners cut to the front of the queue. Click to switch to strict first-come, first-served."
+                : "Off: strict first-come, first-served. Click to let winners cut to the front of the queue."
+            }
           >
-            Winners stay
+            Winner priority
           </button>
 
           <button onClick={() => dispatch({ type: "addCourt" })} className="btn text-xs">

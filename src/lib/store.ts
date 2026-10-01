@@ -29,7 +29,9 @@ const initialState = (): SessionState => ({
   courts: [court("Court 1"), court("Court 2")],
   queue: [],
   history: [],
-  settings: { gameMode: "doubles", winnersStay: false },
+  // Queue is first-come-first-served by default, with winners given priority
+  // back to the front of the line instead of the back.
+  settings: { gameMode: "doubles", winnersStay: true },
 });
 
 async function load(): Promise<SessionState> {

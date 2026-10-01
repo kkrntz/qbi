@@ -28,9 +28,11 @@ session.
   splits them into even teams, pairing the strongest available player with the
   weakest.
 - **Won / End, no winner** records the game, credits games played and wins, and
-  returns everyone to the queue — losers first, so the side that has been
-  waiting longest plays again sooner.
-- **Winners stay** instead puts the winning team back at the front of the line.
+  returns everyone to the queue. The queue is first-come-first-served, with
+  one override: a team that just won gets priority back to the front of the
+  line, ahead of players who have been waiting — losers rejoin at the back,
+  in FCFS order. Toggle **Winner priority** off for strict FCFS for everyone,
+  winners included.
 - **Cancel** returns a court's players to the front of the queue without
   recording a game.
 - Queue rows can be reordered, benched (sit out without losing your spot in the
