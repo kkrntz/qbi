@@ -2,7 +2,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import { apply, court, type Action } from "./store";
-import type { Club, Session, SessionState } from "./types";
+import type { Club, PlatformReport, Session, SessionState } from "./types";
 
 // Override with DATA_DIR in .env.local to store data somewhere else (a
 // mounted volume in a container, a separate dir per facility, etc).
@@ -203,6 +203,87 @@ export function deleteSession(clubId: string, sessionId: string): Promise<void> 
     const next = sessions.filter((s) => s.id !== sessionId);
     if (next.length === sessions.length) throw new Error("That session no longer exists.");
     await writeJson(sessionsFile(clubId), next);
+  });
+}
+
+// --- reporting -------------------------------------------------------------
+
+const RECENT_SESSIONS_LIMIT = 15;
+
+/**
+ * Cross-club rollup for the super admin landing page: totals, a per-club
+ * breakdown, and a recent-activity feed. Reads every club's sessions file
+ * once — fine at the scale this app's file-backed store targets (a handful
+ * to a few dozen clubs), and simplest to keep correct as the data model
+ * changes, rather than maintaining running totals that could drift.
+ */
+export function getPlatformReport(): Promise<PlatformReport> {
+  return withLock(async () => {
+    await migrateLegacySession();
+    const clubs = await readJson<Club[]>(CLUBS_FILE, []);
+
+    let activeSessionCount = 0;
+    let totalSessions = 0;
+    let totalGames = 0;
+    let totalCheckIns = 0;
+    const clubSummaries: PlatformReport["clubs"] = [];
+    const allSessions: { club: Club; session: Session }[] = [];
+
+    for (const club of clubs) {
+      const sessions = await readJson<Session[]>(sessionsFile(club.id), []);
+      const active = sessions.find((s) => s.endedAt === null) ?? null;
+      const clubGames = sessions.reduce((sum, s) => sum + s.history.length, 0);
+      const clubCheckIns = sessions.reduce((sum, s) => sum + s.players.length, 0);
+      const lastActivityAt = sessions.reduce<number | null>(
+        (max, s) => (max === null || s.startedAt > max ? s.startedAt : max),
+        null,
+      );
+
+      activeSessionCount += active ? 1 : 0;
+      totalSessions += sessions.length;
+      totalGames += clubGames;
+      totalCheckIns += clubCheckIns;
+
+      clubSummaries.push({
+        clubId: club.id,
+        clubName: club.name,
+        totalSessions: sessions.length,
+        activeSession: active
+          ? { id: active.id, label: active.label, startedAt: active.startedAt }
+          : null,
+        totalCheckIns: clubCheckIns,
+        totalGames: clubGames,
+        lastActivityAt,
+      });
+
+      for (const session of sessions) allSessions.push({ club, session });
+    }
+
+    clubSummaries.sort((a, b) => (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0));
+
+    const recentSessions = allSessions
+      .sort((a, b) => b.session.startedAt - a.session.startedAt)
+      .slice(0, RECENT_SESSIONS_LIMIT)
+      .map(({ club, session }) => ({
+        clubId: club.id,
+        clubName: club.name,
+        sessionId: session.id,
+        label: session.label,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        checkIns: session.players.length,
+        games: session.history.length,
+      }));
+
+    return {
+      clubCount: clubs.length,
+      activeSessionCount,
+      totalSessions,
+      totalGames,
+      totalCheckIns,
+      clubs: clubSummaries,
+      recentSessions,
+    };
   });
 }
 

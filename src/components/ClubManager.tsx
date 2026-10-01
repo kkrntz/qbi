@@ -97,9 +97,14 @@ export function ClubManager({ user }: { user: PublicUser }) {
         </div>
         <div className="flex items-center gap-2">
           {isSuperAdmin && (
-            <Link href="/users" className="btn text-xs">
-              Users
-            </Link>
+            <>
+              <Link href="/dashboard" className="btn text-xs">
+                Dashboard
+              </Link>
+              <Link href="/users" className="btn text-xs">
+                Users
+              </Link>
+            </>
           )}
           <UserMenu user={user} />
         </div>

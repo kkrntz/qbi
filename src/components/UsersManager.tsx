@@ -97,7 +97,12 @@ export function UsersManager({ currentUser }: { currentUser: PublicUser }) {
             assigned to them.
           </p>
         </div>
-        <UserMenu user={currentUser} />
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard" className="btn text-xs">
+            Dashboard
+          </Link>
+          <UserMenu user={currentUser} />
+        </div>
       </div>
 
       {error && (

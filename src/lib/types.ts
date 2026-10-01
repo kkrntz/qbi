@@ -93,6 +93,43 @@ export type Session = SessionState & {
 export const playersPerTeam = (mode: GameMode) => (mode === "doubles" ? 2 : 1);
 export const playersPerGame = (mode: GameMode) => playersPerTeam(mode) * 2;
 
+/** Per-club rollup for the super admin dashboard. */
+export type ClubReportSummary = {
+  clubId: string;
+  clubName: string;
+  totalSessions: number;
+  activeSession: { id: string; label: string; startedAt: number } | null;
+  /** Sum of players checked in across all of this club's sessions — not
+   * deduplicated, since a player has no identity beyond one session. */
+  totalCheckIns: number;
+  totalGames: number;
+  /** Most recent session start across this club, or null if it has none. */
+  lastActivityAt: number | null;
+};
+
+/** One row in the cross-club recent-activity feed. */
+export type RecentSessionSummary = {
+  clubId: string;
+  clubName: string;
+  sessionId: string;
+  label: string;
+  startedAt: number;
+  endedAt: number | null;
+  checkIns: number;
+  games: number;
+};
+
+/** Platform-wide stats for the super admin landing page. */
+export type PlatformReport = {
+  clubCount: number;
+  activeSessionCount: number;
+  totalSessions: number;
+  totalGames: number;
+  totalCheckIns: number;
+  clubs: ClubReportSummary[];
+  recentSessions: RecentSessionSummary[];
+};
+
 /** `super_admin` manages every club; `club_admin` manages only `clubIds`. */
 export type Role = "super_admin" | "club_admin";
 

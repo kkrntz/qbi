@@ -69,6 +69,16 @@ Removing an account, or editing away the app's only super admin, is blocked
   sessions. They see a filtered `/clubs` list with no club create/rename/
   delete controls, and get redirected away from any other club's pages.
 
+A super admin lands on **`/dashboard`** after signing in (a club admin lands
+on their own club) — a platform-wide report: total clubs, how many have a
+session live right now, total admins (with a super/club breakdown), and
+all-time totals for sessions, games played, and check-ins. Below that, a
+per-club table (status, sessions, games, check-ins, last activity, linking
+into each club) and a recent-activity feed of the most recently started
+sessions across every club. Everything is computed fresh on each page load
+by reading every club's session file — fine at the scale a file-backed store
+targets, and simplest to keep correct as the data model evolves.
+
 **Self check-in and player status pages stay public on purpose** — players
 don't have accounts, so `/clubs/<clubId>/sessions/<sessionId>/checkin` and
 `/p/<playerId>` work with no login, same as the three self-service actions
@@ -171,7 +181,7 @@ status link to the clipboard for the operator to hand off.
 | --- | --- |
 | `src/lib/types.ts` | Domain model: `Player`, `Court`, `Club`, `Session`, `User`, settings |
 | `src/lib/store.ts` | Pure reducer — `apply(state, action)` for every in-session mutation; knows nothing about persistence |
-| `src/lib/clubStore.ts` | File-backed persistence for clubs and their session history; calls `apply()` for game actions, migrates a legacy single-session file on first run |
+| `src/lib/clubStore.ts` | File-backed persistence for clubs and their session history; calls `apply()` for game actions, migrates a legacy single-session file on first run; `getPlatformReport()` builds the cross-club rollup behind `/dashboard` |
 | `src/lib/auth.ts` | Password hashing, signed session cookies, user storage/CRUD — no framework dependency |
 | `src/lib/permissions.ts` | `canAccessClub` (view) / `canManageClub` (run live sessions) — pure, client-safe, no fs/crypto, so both API routes and client components can import it |
 | `src/lib/session.ts` | Cookie get/set/clear and `getCurrentUser()`, built on `next/headers` |
@@ -181,6 +191,6 @@ status link to the clipboard for the operator to hand off.
 | `src/app/api/users` | User CRUD, super admin only |
 | `src/app/api/clubs` | Club CRUD (`GET`/`POST`), and nested `[clubId]` (`PATCH`/`DELETE`) |
 | `src/app/api/clubs/[clubId]/sessions` | Session list/create, nested `[sessionId]` (get/delete), `/end`, and `/actions` (the game-action dispatch endpoint — publicly reachable only for `checkIn`/`checkOut`/`setBenched`) |
-| `src/app/clubs` | Club list, club home, session history, the dashboard, self check-in, and player-status pages |
-| `src/app/login`, `src/app/users` | Sign-in/setup, and the super-admin user manager |
-| `src/components` | Dashboard, court cards, queue and side panels |
+| `src/app/clubs` | Club list, club home, session history, the live session board, self check-in, and player-status pages |
+| `src/app/login`, `src/app/users`, `src/app/dashboard` | Sign-in/setup, the super-admin user manager, and the super-admin report landing page |
+| `src/components` | Session board, court cards, queue and side panels |
