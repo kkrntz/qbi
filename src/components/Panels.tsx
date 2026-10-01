@@ -11,11 +11,13 @@ export function BenchPanel({
   sessionId,
   benched,
   dispatch,
+  canManage,
 }: {
   clubId: string;
   sessionId: string;
   benched: Player[];
   dispatch: Dispatch;
+  canManage: boolean;
 }) {
   return (
     <div>
@@ -44,27 +46,31 @@ export function BenchPanel({
                 playerId={player.id}
                 playerName={player.name}
               />
-              <button
-                onClick={() =>
-                  dispatch({
-                    type: "setBenched",
-                    playerId: player.id,
-                    benched: false,
-                  })
-                }
-                className="btn px-2 py-1 text-xs"
-              >
-                Rejoin
-              </button>
-              <button
-                onClick={() =>
-                  dispatch({ type: "checkOut", playerId: player.id })
-                }
-                className="btn btn-icon btn-danger"
-                aria-label={`Check out ${player.name}`}
-              >
-                ×
-              </button>
+              {canManage && (
+                <>
+                  <button
+                    onClick={() =>
+                      dispatch({
+                        type: "setBenched",
+                        playerId: player.id,
+                        benched: false,
+                      })
+                    }
+                    className="btn px-2 py-1 text-xs"
+                  >
+                    Rejoin
+                  </button>
+                  <button
+                    onClick={() =>
+                      dispatch({ type: "checkOut", playerId: player.id })
+                    }
+                    className="btn btn-icon btn-danger"
+                    aria-label={`Check out ${player.name}`}
+                  >
+                    ×
+                  </button>
+                </>
+              )}
             </li>
           ))}
         </ul>

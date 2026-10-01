@@ -15,6 +15,7 @@ export function QueuePanel({
   gameMode,
   now,
   dispatch,
+  canManage,
 }: {
   clubId: string;
   sessionId: string;
@@ -23,6 +24,7 @@ export function QueuePanel({
   gameMode: GameMode;
   now: number;
   dispatch: Dispatch;
+  canManage: boolean;
 }) {
   const needed = playersPerGame(gameMode);
 
@@ -82,58 +84,60 @@ export function QueuePanel({
                     {player.gamesPlayed} played
                   </span>
                 </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    onClick={() =>
-                      dispatch({
-                        type: "moveInQueue",
-                        playerId: id,
-                        direction: "up",
-                      })
-                    }
-                    disabled={index === 0}
-                    className="btn btn-icon"
-                    aria-label={`Move ${player.name} up`}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    onClick={() =>
-                      dispatch({
-                        type: "moveInQueue",
-                        playerId: id,
-                        direction: "down",
-                      })
-                    }
-                    disabled={index === queue.length - 1}
-                    className="btn btn-icon"
-                    aria-label={`Move ${player.name} down`}
-                  >
-                    ↓
-                  </button>
-                  <button
-                    onClick={() =>
-                      dispatch({
-                        type: "setBenched",
-                        playerId: id,
-                        benched: true,
-                      })
-                    }
-                    className="btn btn-icon"
-                    aria-label={`Bench ${player.name}`}
-                    title="Sit out"
-                  >
-                    ⏸
-                  </button>
-                  <button
-                    onClick={() => dispatch({ type: "checkOut", playerId: id })}
-                    className="btn btn-icon btn-danger"
-                    aria-label={`Check out ${player.name}`}
-                    title="Check out"
-                  >
-                    ×
-                  </button>
-                </div>
+                {canManage && (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      onClick={() =>
+                        dispatch({
+                          type: "moveInQueue",
+                          playerId: id,
+                          direction: "up",
+                        })
+                      }
+                      disabled={index === 0}
+                      className="btn btn-icon"
+                      aria-label={`Move ${player.name} up`}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() =>
+                        dispatch({
+                          type: "moveInQueue",
+                          playerId: id,
+                          direction: "down",
+                        })
+                      }
+                      disabled={index === queue.length - 1}
+                      className="btn btn-icon"
+                      aria-label={`Move ${player.name} down`}
+                    >
+                      ↓
+                    </button>
+                    <button
+                      onClick={() =>
+                        dispatch({
+                          type: "setBenched",
+                          playerId: id,
+                          benched: true,
+                        })
+                      }
+                      className="btn btn-icon"
+                      aria-label={`Bench ${player.name}`}
+                      title="Sit out"
+                    >
+                      ⏸
+                    </button>
+                    <button
+                      onClick={() => dispatch({ type: "checkOut", playerId: id })}
+                      className="btn btn-icon btn-danger"
+                      aria-label={`Check out ${player.name}`}
+                      title="Check out"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
               </li>
             );
           })}

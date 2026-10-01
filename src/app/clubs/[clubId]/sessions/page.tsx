@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClub, listSessions } from "@/lib/clubStore";
+import { canManageClub } from "@/lib/permissions";
 import { requirePageClubAccess } from "@/lib/pageAuth";
 import { SessionHistoryList } from "@/components/SessionHistoryList";
 
@@ -10,7 +11,7 @@ export default async function SessionHistoryPage({
   params: Promise<{ clubId: string }>;
 }) {
   const { clubId } = await params;
-  await requirePageClubAccess(clubId);
+  const user = await requirePageClubAccess(clubId);
   const club = await getClub(clubId);
   if (!club) notFound();
 
@@ -31,7 +32,11 @@ export default async function SessionHistoryPage({
         <p className="text-xs text-muted">{sessions.length} total</p>
       </div>
 
-      <SessionHistoryList clubId={clubId} initialSessions={sessions} />
+      <SessionHistoryList
+        clubId={clubId}
+        initialSessions={sessions}
+        canManage={canManageClub(user, clubId)}
+      />
     </div>
   );
 }

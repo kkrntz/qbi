@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClub, listSessions } from "@/lib/clubStore";
 import { toPublicUser } from "@/lib/auth";
+import { canManageClub } from "@/lib/permissions";
 import { requirePageClubAccess } from "@/lib/pageAuth";
 import { NewSessionForm } from "@/components/NewSessionForm";
 import { UserMenu } from "@/components/UserMenu";
@@ -13,6 +14,7 @@ export default async function ClubPage({
 }) {
   const { clubId } = await params;
   const user = await requirePageClubAccess(clubId);
+  const canManage = canManageClub(user, clubId);
   const club = await getClub(clubId);
   if (!club) notFound();
 
@@ -46,8 +48,12 @@ export default async function ClubPage({
           </div>
           <span className="chip bg-ball text-ball-ink">live →</span>
         </Link>
-      ) : (
+      ) : canManage ? (
         <NewSessionForm clubId={clubId} />
+      ) : (
+        <div className="panel p-4 text-center text-sm text-muted">
+          No active session. Only a club admin for this club can start one.
+        </div>
       )}
 
       <div className="panel p-4">

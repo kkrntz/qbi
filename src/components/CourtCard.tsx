@@ -17,6 +17,9 @@ type Props = {
   now: number;
   canRemove: boolean;
   dispatch: Dispatch;
+  /** False renders this court read-only: no start/end/edit/court-management
+   * controls, just the live state. */
+  canManage: boolean;
   onEditMatch: () => void;
   onAssignPlayers: () => void;
 };
@@ -81,6 +84,7 @@ export function CourtCard({
   now,
   canRemove,
   dispatch,
+  canManage,
   onEditMatch,
   onAssignPlayers,
 }: Props) {
@@ -105,41 +109,45 @@ export function CourtCard({
             <span className="font-mono text-lg font-bold tabular-nums text-accent">
               {formatClock(now - court.match.startedAt)}
             </span>
-            <button
-              onClick={onEditMatch}
-              className="btn btn-icon"
-              aria-label={`Edit teams for ${court.name}`}
-              title="Move players between teams or swap in someone from the queue"
-            >
-              ✎
-            </button>
-          </div>
-        ) : (
-          <div className="flex gap-1">
-            <button
-              onClick={() =>
-                dispatch({
-                  type: "setCourtClosed",
-                  courtId: court.id,
-                  closed: !court.closed,
-                })
-              }
-              className="btn px-2 py-1 text-xs"
-            >
-              {court.closed ? "Reopen" : "Close"}
-            </button>
-            {canRemove && (
+            {canManage && (
               <button
-                onClick={() =>
-                  dispatch({ type: "removeCourt", courtId: court.id })
-                }
-                className="btn btn-danger px-2 py-1 text-xs"
-                aria-label={`Remove ${court.name}`}
+                onClick={onEditMatch}
+                className="btn btn-icon"
+                aria-label={`Edit teams for ${court.name}`}
+                title="Move players between teams or swap in someone from the queue"
               >
-                Remove
+                ✎
               </button>
             )}
           </div>
+        ) : (
+          canManage && (
+            <div className="flex gap-1">
+              <button
+                onClick={() =>
+                  dispatch({
+                    type: "setCourtClosed",
+                    courtId: court.id,
+                    closed: !court.closed,
+                  })
+                }
+                className="btn px-2 py-1 text-xs"
+              >
+                {court.closed ? "Reopen" : "Close"}
+              </button>
+              {canRemove && (
+                <button
+                  onClick={() =>
+                    dispatch({ type: "removeCourt", courtId: court.id })
+                  }
+                  className="btn btn-danger px-2 py-1 text-xs"
+                  aria-label={`Remove ${court.name}`}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          )
         )}
       </header>
 
@@ -152,8 +160,10 @@ export function CourtCard({
               label="Team A"
               ids={court.match.teamA}
               players={players}
-              onWin={() =>
-                dispatch({ type: "endGame", courtId: court.id, winner: "A" })
+              onWin={
+                canManage
+                  ? () => dispatch({ type: "endGame", courtId: court.id, winner: "A" })
+                  : undefined
               }
             />
             <span className="self-center text-xs font-bold text-muted">vs</span>
@@ -163,28 +173,32 @@ export function CourtCard({
               label="Team B"
               ids={court.match.teamB}
               players={players}
-              onWin={() =>
-                dispatch({ type: "endGame", courtId: court.id, winner: "B" })
+              onWin={
+                canManage
+                  ? () => dispatch({ type: "endGame", courtId: court.id, winner: "B" })
+                  : undefined
               }
             />
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() =>
-                dispatch({ type: "endGame", courtId: court.id, winner: null })
-              }
-              className="btn flex-1"
-            >
-              End, no winner
-            </button>
-            <button
-              onClick={() => dispatch({ type: "cancelGame", courtId: court.id })}
-              className="btn btn-danger"
-              title="Put these players back at the front of the queue"
-            >
-              Cancel
-            </button>
-          </div>
+          {canManage && (
+            <div className="flex gap-2">
+              <button
+                onClick={() =>
+                  dispatch({ type: "endGame", courtId: court.id, winner: null })
+                }
+                className="btn flex-1"
+              >
+                End, no winner
+              </button>
+              <button
+                onClick={() => dispatch({ type: "cancelGame", courtId: court.id })}
+                className="btn btn-danger"
+                title="Put these players back at the front of the queue"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </>
       ) : (
         <div className="flex flex-col items-center gap-2 rounded-xl bg-inset px-3 py-6">
@@ -195,23 +209,25 @@ export function CourtCard({
                 ? `Waiting on ${shortBy} more player${shortBy > 1 ? "s" : ""}.`
                 : "Ready for the next group."}
           </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => dispatch({ type: "startGame", courtId: court.id })}
-              className="btn btn-primary"
-              disabled={court.closed || shortBy > 0}
-            >
-              Start next game
-            </button>
-            <button
-              onClick={onAssignPlayers}
-              className="btn"
-              disabled={court.closed || shortBy > 0}
-              title="Pick who plays and arrange the teams yourself, then start"
-            >
-              Assign players…
-            </button>
-          </div>
+          {canManage && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => dispatch({ type: "startGame", courtId: court.id })}
+                className="btn btn-primary"
+                disabled={court.closed || shortBy > 0}
+              >
+                Start next game
+              </button>
+              <button
+                onClick={onAssignPlayers}
+                className="btn"
+                disabled={court.closed || shortBy > 0}
+                title="Pick who plays and arrange the teams yourself, then start"
+              >
+                Assign players…
+              </button>
+            </div>
+          )}
         </div>
       )}
     </section>

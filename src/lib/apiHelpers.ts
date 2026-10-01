@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { canAccessClub } from "./auth";
+import { canAccessClub, canManageClub } from "./permissions";
 import { getCurrentUser } from "./session";
 import type { User } from "./types";
 
@@ -53,9 +53,22 @@ export async function requireSuperAdmin(): Promise<User | NextResponse> {
   return user.role === "super_admin" ? user : superAdminOnly();
 }
 
-/** Super admin, or a club admin whose `clubIds` includes `clubId`. */
+/** View access: super admin, or a club admin whose `clubIds` includes `clubId`. */
 export async function requireClubAccess(clubId: string): Promise<User | NextResponse> {
   const user = await requireUser();
   if (user instanceof NextResponse) return user;
   return canAccessClub(user, clubId) ? user : forbidden();
+}
+
+/**
+ * Manage access: only a club admin assigned to `clubId` — deliberately
+ * excludes super_admin. Use for anything that drives a club's live
+ * sessions (create/end/delete a session, run an in-game action); use
+ * `requireClubAccess` for read-only operations super admins should still
+ * see (session history, a session's current state).
+ */
+export async function requireClubManager(clubId: string): Promise<User | NextResponse> {
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
+  return canManageClub(user, clubId) ? user : forbidden();
 }

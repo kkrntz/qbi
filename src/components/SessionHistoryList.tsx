@@ -7,9 +7,11 @@ import type { Session } from "@/lib/types";
 export function SessionHistoryList({
   clubId,
   initialSessions,
+  canManage,
 }: {
   clubId: string;
   initialSessions: Session[];
+  canManage: boolean;
 }) {
   const [sessions, setSessions] = useState(initialSessions);
   const [error, setError] = useState<string | null>(null);
@@ -80,15 +82,17 @@ export function SessionHistoryList({
                   {session.players.length} players · {session.history.length} games
                 </span>
               </Link>
-              <button
-                onClick={() => removeSession(session)}
-                className="btn btn-icon btn-danger shrink-0"
-                aria-label={`Delete ${session.label || "Untitled session"}`}
-                title="Delete session"
-                disabled={deletingId === session.id}
-              >
-                ×
-              </button>
+              {canManage && (
+                <button
+                  onClick={() => removeSession(session)}
+                  className="btn btn-icon btn-danger shrink-0"
+                  aria-label={`Delete ${session.label || "Untitled session"}`}
+                  title="Delete session"
+                  disabled={deletingId === session.id}
+                >
+                  ×
+                </button>
+              )}
             </li>
           ))}
         </ul>

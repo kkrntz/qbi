@@ -186,8 +186,7 @@ export function verifyLogin(email: string, password: string): Promise<User | nul
   });
 }
 
-// --- authorization helpers -------------------------------------------------
-
-export function canAccessClub(user: Pick<User, "role" | "clubIds">, clubId: string): boolean {
-  return user.role === "super_admin" || user.clubIds.includes(clubId);
-}
+// Authorization helpers (canAccessClub, canManageClub) live in
+// ./permissions — pure, client-safe, no fs/crypto — so components can import
+// them directly instead of this server-only module.
+export { canAccessClub, canManageClub } from "./permissions";

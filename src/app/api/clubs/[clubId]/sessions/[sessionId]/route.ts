@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { deleteSession, getSession } from "@/lib/clubStore";
-import { requireClubAccess, respond } from "@/lib/apiHelpers";
+import { requireClubManager, respond } from "@/lib/apiHelpers";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +22,7 @@ export async function DELETE(
   { params }: { params: Promise<{ clubId: string; sessionId: string }> },
 ) {
   const { clubId, sessionId } = await params;
-  const auth = await requireClubAccess(clubId);
+  const auth = await requireClubManager(clubId);
   if (auth instanceof NextResponse) return auth;
   return respond(async () => {
     await deleteSession(clubId, sessionId);

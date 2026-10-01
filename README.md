@@ -51,20 +51,25 @@ setup form instead of a login form — whatever account is created there
 becomes the first **super admin**. After that, setup is disabled; new
 accounts come from an existing super admin at **`/users`**.
 
-- **Super admin** — manages every club: full club CRUD, create/manage other
-  users (super admins and club admins), and full access to every club's
-  sessions.
+- **Super admin** — full club CRUD and user management, and can **view**
+  every club's sessions (live or ended) — but cannot run them. A live
+  session opened by a super admin renders fully read-only: no check-in, no
+  starting/ending games, no court or settings changes, no creating/ending/
+  deleting a session. That's deliberate — super admin is for club/user
+  administration and cross-club oversight, not operating one club's
+  gameplay day to day.
 - **Club admin** — manages only the club(s) assigned to them (`/users` lets a
-  super admin pick one or more). They see a filtered `/clubs` list with no
-  create/rename/delete controls, and get redirected away from any other
-  club's pages.
+  super admin pick one or more): full control over those clubs' live
+  sessions. They see a filtered `/clubs` list with no club create/rename/
+  delete controls, and get redirected away from any other club's pages.
 
 **Self check-in and player status pages stay public on purpose** — players
 don't have accounts, so `/clubs/<clubId>/sessions/<sessionId>/checkin` and
 `/p/<playerId>` work with no login, same as the three self-service actions
 they rely on (`checkIn`, `checkOut`, `setBenched`). Every other action —
-starting/ending games, court management, settings — requires a signed-in
-super admin or a club admin for that specific club.
+starting/ending games, court management, settings, creating/ending/deleting a
+session — requires a signed-in club admin for that specific club (not a
+super admin — see above).
 
 ## Clubs and sessions
 
@@ -162,8 +167,9 @@ status link to the clipboard for the operator to hand off.
 | `src/lib/store.ts` | Pure reducer — `apply(state, action)` for every in-session mutation; knows nothing about persistence |
 | `src/lib/clubStore.ts` | File-backed persistence for clubs and their session history; calls `apply()` for game actions, migrates a legacy single-session file on first run |
 | `src/lib/auth.ts` | Password hashing, signed session cookies, user storage/CRUD — no framework dependency |
+| `src/lib/permissions.ts` | `canAccessClub` (view) / `canManageClub` (run live sessions) — pure, client-safe, no fs/crypto, so both API routes and client components can import it |
 | `src/lib/session.ts` | Cookie get/set/clear and `getCurrentUser()`, built on `next/headers` |
-| `src/lib/pageAuth.ts` | `requirePageUser`/`requirePageClubAccess`/`requirePageSuperAdmin` — redirect-on-failure guards for Server Component pages |
+| `src/lib/pageAuth.ts` | `requirePageUser`/`requirePageClubAccess`/`requirePageClubManager`/`requirePageSuperAdmin` — redirect-on-failure guards for Server Component pages |
 | `src/lib/teamPicker.ts` | Shared team-balancing/placement logic used by the automatic picker and the manual modals |
 | `src/app/api/auth` | `login`, `logout`, `setup` (first-run bootstrap), `me` |
 | `src/app/api/users` | User CRUD, super admin only |

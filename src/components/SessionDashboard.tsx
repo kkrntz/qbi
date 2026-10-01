@@ -21,11 +21,16 @@ export function SessionDashboard({
   clubName,
   sessionId,
   user,
+  canManage,
 }: {
   clubId: string;
   clubName: string;
   sessionId: string;
   user: PublicUser;
+  /** False for a super admin viewing a club they don't run day-to-day — the
+   * dashboard renders read-only: every control that starts/ends a game,
+   * manages a court, or touches the queue/roster is hidden. */
+  canManage: boolean;
 }) {
   const { state, error, dispatch, dismissError } = useSession(clubId, sessionId);
   const now = useTicker();
@@ -136,13 +141,15 @@ export function SessionDashboard({
           >
             Download session data
           </button>
-          <button
-            onClick={() => void deleteSession()}
-            className="btn btn-danger"
-            disabled={deleting}
-          >
-            {deleting ? "Deleting…" : "Delete session"}
-          </button>
+          {canManage && (
+            <button
+              onClick={() => void deleteSession()}
+              className="btn btn-danger"
+              disabled={deleting}
+            >
+              {deleting ? "Deleting…" : "Delete session"}
+            </button>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -183,62 +190,75 @@ export function SessionDashboard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div
-            className="flex overflow-hidden rounded-lg border border-border"
-            role="radiogroup"
-            aria-label="Game mode"
-          >
-            {(["doubles", "singles"] as const).map((mode) => (
-              <button
-                key={mode}
-                role="radio"
-                aria-checked={settings.gameMode === mode}
-                onClick={() => dispatch({ type: "setGameMode", gameMode: mode })}
-                className={`px-3 py-2 text-xs font-semibold capitalize transition ${
-                  settings.gameMode === mode
-                    ? "bg-accent text-accent-ink"
-                    : "bg-inset text-muted hover:text-text"
-                }`}
+          {canManage ? (
+            <>
+              <div
+                className="flex overflow-hidden rounded-lg border border-border"
+                role="radiogroup"
+                aria-label="Game mode"
               >
-                {mode}
+                {(["doubles", "singles"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    role="radio"
+                    aria-checked={settings.gameMode === mode}
+                    onClick={() => dispatch({ type: "setGameMode", gameMode: mode })}
+                    className={`px-3 py-2 text-xs font-semibold capitalize transition ${
+                      settings.gameMode === mode
+                        ? "bg-accent text-accent-ink"
+                        : "bg-inset text-muted hover:text-text"
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() =>
+                  dispatch({
+                    type: "setWinnersStay",
+                    winnersStay: !settings.winnersStay,
+                  })
+                }
+                className={`btn text-xs ${settings.winnersStay ? "btn-primary" : ""}`}
+                aria-pressed={settings.winnersStay}
+                title={
+                  settings.winnersStay
+                    ? "On: winners rejoin the back of the line just ahead of their losing opponents. Click to switch to strict first-come, first-served."
+                    : "Off: strict first-come, first-served — winners and losers rejoin the back of the line in the same order. Click to give winners priority over their opponents."
+                }
+              >
+                Winner priority
               </button>
-            ))}
-          </div>
 
-          <button
-            onClick={() =>
-              dispatch({
-                type: "setWinnersStay",
-                winnersStay: !settings.winnersStay,
-              })
-            }
-            className={`btn text-xs ${settings.winnersStay ? "btn-primary" : ""}`}
-            aria-pressed={settings.winnersStay}
-            title={
-              settings.winnersStay
-                ? "On: winners rejoin the back of the line just ahead of their losing opponents. Click to switch to strict first-come, first-served."
-                : "Off: strict first-come, first-served — winners and losers rejoin the back of the line in the same order. Click to give winners priority over their opponents."
-            }
-          >
-            Winner priority
-          </button>
+              <button onClick={() => dispatch({ type: "addCourt" })} className="btn text-xs">
+                + Court
+              </button>
 
-          <button onClick={() => dispatch({ type: "addCourt" })} className="btn text-xs">
-            + Court
-          </button>
+              <SelfCheckInLink clubId={clubId} sessionId={sessionId} />
 
-          <SelfCheckInLink clubId={clubId} sessionId={sessionId} />
-
-          <button
-            onClick={() => setEndingSession(true)}
-            className="btn btn-danger text-xs"
-          >
-            End session
-          </button>
+              <button
+                onClick={() => setEndingSession(true)}
+                className="btn btn-danger text-xs"
+              >
+                End session
+              </button>
+            </>
+          ) : (
+            <span className="chip bg-inset text-muted">View only</span>
+          )}
 
           <UserMenu user={user} />
         </div>
       </header>
+
+      {!canManage && (
+        <p className="rounded-xl border border-border bg-inset px-4 py-2.5 text-xs text-muted">
+          You&apos;re viewing this session as a super admin. Only a club admin
+          for {clubName} can check players in, run games, or change settings.
+        </p>
+      )}
 
       {error && (
         <div
@@ -268,6 +288,7 @@ export function SessionDashboard({
                 now={now}
                 canRemove={courts.length > 1}
                 dispatch={dispatch}
+                canManage={canManage}
                 onEditMatch={() => setEditMatchCourtId(court.id)}
                 onAssignPlayers={() => setAssignCourtId(court.id)}
               />
@@ -291,15 +312,17 @@ export function SessionDashboard({
         </div>
 
         <aside className="flex flex-col gap-4">
-          <div className="panel p-4">
-            <h2 className="mb-3 text-sm font-bold">Check in</h2>
-            <CheckInForm dispatch={dispatch} />
-            <p className="mt-2 text-[11px] text-muted">
-              {settings.gameMode === "doubles"
-                ? `Teams are balanced automatically from the first ${needed} in line.`
-                : `The first ${needed} in line are paired head to head.`}
-            </p>
-          </div>
+          {canManage && (
+            <div className="panel p-4">
+              <h2 className="mb-3 text-sm font-bold">Check in</h2>
+              <CheckInForm dispatch={dispatch} />
+              <p className="mt-2 text-[11px] text-muted">
+                {settings.gameMode === "doubles"
+                  ? `Teams are balanced automatically from the first ${needed} in line.`
+                  : `The first ${needed} in line are paired head to head.`}
+              </p>
+            </div>
+          )}
 
           <div className="panel p-4">
             <QueuePanel
@@ -310,6 +333,7 @@ export function SessionDashboard({
               gameMode={settings.gameMode}
               now={now}
               dispatch={dispatch}
+              canManage={canManage}
             />
           </div>
 
@@ -317,6 +341,7 @@ export function SessionDashboard({
             <BenchPanel
               clubId={clubId}
               sessionId={sessionId}
+              canManage={canManage}
               benched={benched}
               dispatch={dispatch}
             />
