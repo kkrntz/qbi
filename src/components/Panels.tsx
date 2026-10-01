@@ -3,6 +3,7 @@
 import type { Dispatch } from "@/lib/useSession";
 import type { MatchRecord, Player } from "@/lib/types";
 import { formatClock } from "@/lib/format";
+import { PlayerLinkButton } from "./PlayerLinkButton";
 import { Avatar, Empty, SkillChip } from "./ui";
 
 export function BenchPanel({
@@ -33,6 +34,7 @@ export function BenchPanel({
                 {player.name}
               </span>
               <SkillChip skill={player.skill} />
+              <PlayerLinkButton playerId={player.id} playerName={player.name} />
               <button
                 onClick={() =>
                   dispatch({

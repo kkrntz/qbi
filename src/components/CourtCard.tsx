@@ -4,6 +4,7 @@ import type { Dispatch } from "@/lib/useSession";
 import type { Court, GameMode, Player } from "@/lib/types";
 import { playersPerGame } from "@/lib/types";
 import { formatClock } from "@/lib/format";
+import { PlayerLinkButton } from "./PlayerLinkButton";
 import { Avatar, SkillChip } from "./ui";
 
 type Props = {
@@ -46,10 +47,11 @@ function Team({
           return (
             <li key={id} className="flex items-center gap-2">
               <Avatar player={player} />
-              <span className="truncate text-sm font-semibold">
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold">
                 {player.name}
               </span>
               <SkillChip skill={player.skill} />
+              <PlayerLinkButton playerId={id} playerName={player.name} />
             </li>
           );
         })}

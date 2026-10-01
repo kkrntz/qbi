@@ -4,6 +4,7 @@ import type { Dispatch } from "@/lib/useSession";
 import type { GameMode, Player } from "@/lib/types";
 import { playersPerGame } from "@/lib/types";
 import { formatWait } from "@/lib/format";
+import { PlayerLinkButton } from "./PlayerLinkButton";
 import { Avatar, Empty, SkillChip } from "./ui";
 
 export function QueuePanel({
@@ -65,6 +66,7 @@ export function QueuePanel({
                       {player.name}
                     </span>
                     <SkillChip skill={player.skill} />
+                    <PlayerLinkButton playerId={id} playerName={player.name} />
                   </div>
                   <span className="text-[11px] text-muted">
                     waiting {formatWait(now - (player.queuedAt ?? now))} ·{" "}

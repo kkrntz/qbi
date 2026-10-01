@@ -41,6 +41,11 @@ offers **I'm back — rejoin the queue**. A player who's been checked out (or a
 session that's been reset) sees a friendly prompt to check in again instead
 of an error.
 
+Players checked in by an operator (not via self check-in) don't get this link
+automatically, so a small **🔗** button next to every player's name — in the
+queue, the sitting-out list, and on a live court — copies their personal
+`/p/<id>` link to the clipboard for the operator to hand off.
+
 ## How the rotation works
 
 - **Check in** adds a player with a skill level, placed ahead of anyone
