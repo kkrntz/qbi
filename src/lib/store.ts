@@ -104,11 +104,12 @@ const isSameGroup = (ids: string[], group: Set<string>) =>
 /**
  * Picks the next `needed` players off the front of the queue, but — as much
  * as the queue allows — avoids handing back the exact same foursome that
- * played together in one of the last few matches. Only the single
- * lowest-priority slot in the group is swapped (searching deeper into the
- * queue for a replacement), so the players who have waited longest keep
- * their spot whenever possible; if no swap breaks the repeat, the front of
- * the queue plays anyway.
+ * played together in one of the last few matches. When that happens, the
+ * two lowest-priority slots in the group are swapped for the next two
+ * players waiting, so the group changes meaningfully rather than by a
+ * single face; the players who have waited longest still keep their spot.
+ * If the queue can't supply two replacements, it swaps as many as it can;
+ * if none are available, the front of the queue plays anyway.
  */
 function pickUpNextGroup(state: SessionState, needed: number): string[] {
   const recentGroups = state.history
@@ -118,16 +119,14 @@ function pickUpNextGroup(state: SessionState, needed: number): string[] {
   const group = state.queue.slice(0, needed);
   if (!recentGroups.some((recent) => isSameGroup(group, recent))) return group;
 
-  for (let outIdx = needed - 1; outIdx >= 0; outIdx--) {
-    for (let i = needed; i < state.queue.length; i++) {
-      const trial = [...group];
-      trial[outIdx] = state.queue[i];
-      if (!recentGroups.some((recent) => isSameGroup(trial, recent))) {
-        return trial;
-      }
-    }
+  const swapCount = Math.min(2, needed, state.queue.length - needed);
+  const trial = [...group];
+  for (let i = 0; i < swapCount; i++) {
+    // Lowest-priority slots (end of the group) make way for the next
+    // players in line (start of what's left of the queue).
+    trial[needed - 1 - i] = state.queue[needed + i];
   }
-  return group; // No alternative breaks the repeat — play it anyway.
+  return trial;
 }
 
 /**
