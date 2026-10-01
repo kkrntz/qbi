@@ -166,6 +166,58 @@ export function createUser(
   });
 }
 
+export type UserUpdate = {
+  email?: string;
+  password?: string;
+  role?: Role;
+  clubIds?: string[];
+};
+
+export function updateUser(id: string, update: UserUpdate): Promise<User> {
+  return withLock(async () => {
+    const users = await readJson<User[]>(USERS_FILE, []);
+    const user = users.find((u) => u.id === id);
+    if (!user) throw new Error("That user no longer exists.");
+
+    if (update.email !== undefined) {
+      const normalized = update.email.trim().toLowerCase();
+      if (!normalized || !normalized.includes("@"))
+        throw new Error("Enter a valid email address.");
+      if (users.some((u) => u.id !== id && u.email === normalized))
+        throw new Error("That email is already in use.");
+      user.email = normalized;
+    }
+
+    if (update.password !== undefined && update.password !== "") {
+      if (update.password.length < 8)
+        throw new Error("Password needs to be at least 8 characters.");
+      user.passwordHash = hashPassword(update.password);
+    }
+
+    const nextRole = update.role ?? user.role;
+    const nextClubIds =
+      nextRole === "super_admin" ? [] : (update.clubIds ?? user.clubIds);
+
+    if (nextRole === "club_admin" && nextClubIds.length === 0)
+      throw new Error("A club admin needs at least one club.");
+
+    // Guard against demoting/removing the last super admin, mirroring
+    // deleteUser's guard — the app must always have at least one.
+    if (user.role === "super_admin" && nextRole !== "super_admin") {
+      const remaining = users.filter(
+        (u) => u.role === "super_admin" && u.id !== id,
+      );
+      if (remaining.length === 0) throw new Error("Can't demote the last super admin.");
+    }
+
+    user.role = nextRole;
+    user.clubIds = nextClubIds;
+
+    await writeJson(USERS_FILE, users);
+    return user;
+  });
+}
+
 export function deleteUser(id: string): Promise<void> {
   return withLock(async () => {
     const users = await readJson<User[]>(USERS_FILE, []);

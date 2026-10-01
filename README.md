@@ -48,8 +48,14 @@ time `/clubs` loads.
 
 The first time anyone visits `/login` with no users yet, it shows a one-time
 setup form instead of a login form — whatever account is created there
-becomes the first **super admin**. After that, setup is disabled; new
-accounts come from an existing super admin at **`/users`**.
+becomes the first **super admin**. After that, setup is disabled; a super
+admin manages every account from **`/users`** — create, **edit** (email,
+password, role, and which clubs a club admin runs — reassigning clubs takes
+effect on that admin's very next request, no re-login needed), and remove.
+A change takes effect immediately rather than waiting for a fresh login,
+since every request re-reads the account's current role straight from disk.
+Removing an account, or editing away the app's only super admin, is blocked
+— there must always be at least one.
 
 - **Super admin** — full club CRUD and user management, and can **view**
   every club's sessions (live or ended) — but cannot run them. A live

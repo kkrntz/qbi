@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Club, PublicUser, Role } from "@/lib/types";
+import { ClubPicker } from "./ClubPicker";
+import { EditUserRow } from "./EditUserRow";
 import { UserMenu } from "./UserMenu";
 
 export function UsersManager({ currentUser }: { currentUser: PublicUser }) {
@@ -15,8 +17,7 @@ export function UsersManager({ currentUser }: { currentUser: PublicUser }) {
   const [role, setRole] = useState<Role>("club_admin");
   const [clubIds, setClubIds] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
-  const [newClubName, setNewClubName] = useState("");
-  const [creatingClub, setCreatingClub] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   async function refresh() {
     try {
@@ -41,27 +42,8 @@ export function UsersManager({ currentUser }: { currentUser: PublicUser }) {
     setClubIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
   }
 
-  async function createClubInline() {
-    if (!newClubName.trim() || creatingClub) return;
-    setCreatingClub(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/clubs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newClubName }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body?.error ?? "Could not create the club.");
-      const club = body as Club;
-      setClubs((prev) => [...prev, club].sort((a, b) => a.name.localeCompare(b.name)));
-      setClubIds((prev) => [...prev, club.id]);
-      setNewClubName("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create the club.");
-    } finally {
-      setCreatingClub(false);
-    }
+  function addClub(club: Club) {
+    setClubs((prev) => [...prev, club].sort((a, b) => a.name.localeCompare(b.name)));
   }
 
   async function createUser(event: React.FormEvent) {
@@ -185,53 +167,15 @@ export function UsersManager({ currentUser }: { currentUser: PublicUser }) {
         </div>
 
         {role === "club_admin" && (
-          <div>
-            <span className="label mb-1.5 block">Clubs they administer</span>
-            {clubs.length === 0 ? (
-              <p className="mb-2 text-xs text-muted">No clubs exist yet — add one below.</p>
-            ) : (
-              <div className="mb-2 flex flex-wrap gap-1.5">
-                {clubs.map((club) => (
-                  <button
-                    key={club.id}
-                    type="button"
-                    onClick={() => toggleClub(club.id)}
-                    className={`chip cursor-pointer border ${
-                      clubIds.includes(club.id)
-                        ? "border-accent bg-accent-soft text-accent"
-                        : "border-border bg-inset text-muted"
-                    }`}
-                  >
-                    {club.name}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="flex gap-1.5">
-              <input
-                value={newClubName}
-                onChange={(e) => setNewClubName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void createClubInline();
-                  }
-                }}
-                placeholder="New club name"
-                aria-label="New club name"
-                className="min-w-0 flex-1 rounded-lg border border-border bg-inset px-2.5 py-1.5
-                  text-xs text-text outline-none placeholder:text-muted focus:border-accent"
-              />
-              <button
-                type="button"
-                onClick={() => void createClubInline()}
-                className="btn px-2.5 py-1.5 text-xs"
-                disabled={!newClubName.trim() || creatingClub}
-              >
-                {creatingClub ? "Adding…" : "+ Add club"}
-              </button>
-            </div>
-          </div>
+          <ClubPicker
+            clubs={clubs}
+            clubIds={clubIds}
+            onToggle={toggleClub}
+            onClubCreated={(club) => {
+              addClub(club);
+              setClubIds((prev) => [...prev, club.id]);
+            }}
+          />
         )}
 
         <button
@@ -254,33 +198,55 @@ export function UsersManager({ currentUser }: { currentUser: PublicUser }) {
         <div className="panel p-6 text-center text-sm text-muted">No users yet.</div>
       ) : (
         <ul className="flex flex-col gap-2">
-          {users.map((user) => (
-            <li key={user.id} className="panel flex items-center gap-2 p-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="truncate text-sm font-semibold">{user.email}</span>
-                  <span className="chip bg-inset text-muted">
-                    {user.role === "super_admin" ? "super admin" : "club admin"}
-                  </span>
+          {users.map((user) =>
+            editingId === user.id ? (
+              <EditUserRow
+                key={user.id}
+                user={user}
+                clubs={clubs}
+                onClubCreated={addClub}
+                onCancel={() => setEditingId(null)}
+                onSaved={(updated) => {
+                  setUsers((prev) =>
+                    prev?.map((u) => (u.id === updated.id ? updated : u)) ?? prev,
+                  );
+                  setEditingId(null);
+                }}
+              />
+            ) : (
+              <li key={user.id} className="panel flex items-center gap-2 p-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate text-sm font-semibold">{user.email}</span>
+                    <span className="chip bg-inset text-muted">
+                      {user.role === "super_admin" ? "super admin" : "club admin"}
+                    </span>
+                  </div>
+                  {user.role === "club_admin" && (
+                    <span className="text-xs text-muted">
+                      {user.clubIds.length === 0
+                        ? "No clubs assigned"
+                        : user.clubIds.map(clubName).join(", ")}
+                    </span>
+                  )}
                 </div>
-                {user.role === "club_admin" && (
-                  <span className="text-xs text-muted">
-                    {user.clubIds.length === 0
-                      ? "No clubs assigned"
-                      : user.clubIds.map(clubName).join(", ")}
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={() => removeUser(user)}
-                className="btn btn-danger px-2 py-1.5 text-xs"
-                disabled={user.id === currentUser.id}
-                title={user.id === currentUser.id ? "You can't remove your own account" : undefined}
-              >
-                Remove
-              </button>
-            </li>
-          ))}
+                <button
+                  onClick={() => setEditingId(user.id)}
+                  className="btn px-2 py-1.5 text-xs"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => removeUser(user)}
+                  className="btn btn-danger px-2 py-1.5 text-xs"
+                  disabled={user.id === currentUser.id}
+                  title={user.id === currentUser.id ? "You can't remove your own account" : undefined}
+                >
+                  Remove
+                </button>
+              </li>
+            ),
+          )}
         </ul>
       )}
     </div>
