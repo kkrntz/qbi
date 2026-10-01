@@ -4,7 +4,7 @@ import { requirePageSuperAdmin } from "@/lib/pageAuth";
 import { UsersManager } from "@/components/UsersManager";
 
 export const metadata: Metadata = {
-  title: "Users — Pickleball Queue",
+  title: "Users — In-Que",
   description: "Manage admin accounts and which clubs they run.",
 };
 

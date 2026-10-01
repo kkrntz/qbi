@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PlayerStatus } from "@/components/PlayerStatus";
 
 export const metadata: Metadata = {
-  title: "My Status — Pickleball Queue",
+  title: "My Status — In-Que",
   description: "Live status for a checked-in player.",
 };
 

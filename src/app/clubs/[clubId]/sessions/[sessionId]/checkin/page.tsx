@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SelfCheckIn } from "@/components/SelfCheckIn";
 
 export const metadata: Metadata = {
-  title: "Check In — Pickleball Queue",
+  title: "Check In — In-Que",
   description: "Add yourself to the pickleball queue.",
 };
 
