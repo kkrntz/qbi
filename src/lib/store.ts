@@ -273,16 +273,18 @@ export function apply(state: SessionState, action: Action): void {
         if (winningIds.includes(id)) player.wins += 1;
       }
 
+      // Everyone rejoins at the back of the existing queue — nobody cuts
+      // ahead of players who were already waiting. Winner priority only
+      // orders this match's two teams relative to each other: the winning
+      // team is appended first, landing just ahead of the losing team
+      // within the new block at the end of the line.
       const losingIds = [...match.teamA, ...match.teamB].filter(
         (id) => !winningIds.includes(id),
       );
-      for (const id of losingIds) enqueue(state, id);
-      if (state.settings.winnersStay) {
-        // Reversed so unshifting leaves the winning team in its own order.
-        for (const id of [...winningIds].reverse()) enqueue(state, id, true);
-      } else {
-        for (const id of winningIds) enqueue(state, id);
-      }
+      const rejoinOrder = state.settings.winnersStay
+        ? [...winningIds, ...losingIds]
+        : [...match.teamA, ...match.teamB];
+      for (const id of rejoinOrder) enqueue(state, id);
 
       target.match = null;
       return;

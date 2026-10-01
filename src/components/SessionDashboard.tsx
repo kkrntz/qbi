@@ -76,8 +76,8 @@ export function SessionDashboard() {
             aria-pressed={settings.winnersStay}
             title={
               settings.winnersStay
-                ? "On: winners cut to the front of the queue. Click to switch to strict first-come, first-served."
-                : "Off: strict first-come, first-served. Click to let winners cut to the front of the queue."
+                ? "On: winners rejoin the back of the line just ahead of their losing opponents. Click to switch to strict first-come, first-served."
+                : "Off: strict first-come, first-served — winners and losers rejoin the back of the line in the same order. Click to give winners priority over their opponents."
             }
           >
             Winner priority
