@@ -94,6 +94,7 @@ export type Action =
   | { type: "startGame"; courtId: string }
   | { type: "startCustomGame"; courtId: string; teamA: string[]; teamB: string[] }
   | { type: "updateMatch"; courtId: string; teamA: string[]; teamB: string[] }
+  | { type: "choosePartner"; playerId: string; partnerId: string }
   | { type: "endGame"; courtId: string; winner: Winner }
   | { type: "cancelGame"; courtId: string }
   | { type: "setGameMode"; gameMode: GameMode }
@@ -297,6 +298,33 @@ export function apply(state: SessionState, action: Action): void {
 
       target.match.teamA = action.teamA;
       target.match.teamB = action.teamB;
+      return;
+    }
+
+    case "choosePartner": {
+      const match = state.courts.find(
+        (c) =>
+          c.match &&
+          (c.match.teamA.includes(action.playerId) || c.match.teamB.includes(action.playerId)),
+      )?.match;
+      if (!match) throw new Error("You're not on a court right now.");
+
+      const mine = match.teamA.includes(action.playerId) ? match.teamA : match.teamB;
+      const theirs = mine === match.teamA ? match.teamB : match.teamA;
+      if (mine.length !== 2) throw new Error("Partners only apply to doubles.");
+      if (mine.includes(action.partnerId)) {
+        if (action.partnerId === action.playerId)
+          throw new Error("Pick a partner from the other players on your court.");
+        return;
+      }
+      const partnerSlot = theirs.indexOf(action.partnerId);
+      if (partnerSlot === -1)
+        throw new Error("Pick a partner from the other players on your court.");
+
+      // The player who picks keeps their side: the chosen partner and the
+      // current teammate trade places, so the other two end up together.
+      const mateSlot = mine.findIndex((id) => id !== action.playerId);
+      [mine[mateSlot], theirs[partnerSlot]] = [theirs[partnerSlot], mine[mateSlot]];
       return;
     }
 

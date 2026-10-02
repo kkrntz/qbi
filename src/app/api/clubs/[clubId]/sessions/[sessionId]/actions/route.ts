@@ -11,7 +11,12 @@ import { readJsonBody, requireClubManager, respond } from "@/lib/apiHelpers";
  * admin can view a live session but not run it, so requireClubManager (not
  * requireClubAccess) is deliberate here.
  */
-const PUBLIC_ACTION_TYPES = new Set<Action["type"]>(["checkIn", "checkOut", "setBenched"]);
+const PUBLIC_ACTION_TYPES = new Set<Action["type"]>([
+  "checkIn",
+  "checkOut",
+  "setBenched",
+  "choosePartner",
+]);
 
 export async function POST(
   request: Request,

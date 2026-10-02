@@ -111,8 +111,9 @@ targets, and simplest to keep correct as the data model evolves.
 
 **Self check-in and player status pages stay public on purpose** — players
 don't have accounts, so `/clubs/<clubId>/sessions/<sessionId>/checkin` and
-`/p/<playerId>` work with no login, same as the three self-service actions
-they rely on (`checkIn`, `checkOut`, `setBenched`). Every other action —
+`/p/<playerId>` work with no login, same as the four self-service actions
+they rely on (`checkIn`, `checkOut`, `setBenched`, `choosePartner`). Every
+other action —
 starting/ending games, court management, settings, creating/ending/deleting a
 session — requires a signed-in club admin for that specific club (not a
 super admin — see above).
@@ -158,7 +159,10 @@ their own personal, bookmarkable status page.
 one checked-in player — reached via **View my status** after self check-in.
 It updates automatically as the session changes: while waiting it shows their
 position in line and a **Leave the queue** button; once their match starts it
-shows the court, teammate and opponents, and a live clock; if an operator
+shows the court, teammate and opponents, and a live clock — and, in doubles,
+a **Choose your partner** list of the other three players on the court:
+tapping one swaps them with the current teammate, leaving the other two as
+the opposing team (the latest pick on a court wins); if an operator
 benches them it offers **I'm back — rejoin the queue**. A player who's been
 checked out sees a friendly prompt to check in again instead of an error, and
 once the session ends everyone's page shows a simple "thanks for playing"
@@ -221,7 +225,7 @@ status link to the clipboard for the operator to hand off.
 | `src/app/api/auth` | `login`, `logout`, `setup` (first-run bootstrap), `me` |
 | `src/app/api/users` | User CRUD, super admin only |
 | `src/app/api/clubs` | Club CRUD (`GET`/`POST`), and nested `[clubId]` (`PATCH`/`DELETE`) |
-| `src/app/api/clubs/[clubId]/sessions` | Session list/create, nested `[sessionId]` (get/delete), `/end`, and `/actions` (the game-action dispatch endpoint — publicly reachable only for `checkIn`/`checkOut`/`setBenched`) |
+| `src/app/api/clubs/[clubId]/sessions` | Session list/create, nested `[sessionId]` (get/delete), `/end`, and `/actions` (the game-action dispatch endpoint — publicly reachable only for `checkIn`/`checkOut`/`setBenched`/`choosePartner`) |
 | `src/app/clubs` | Club list, club home, session history, the live session board, self check-in, and player-status pages |
 | `src/app/login`, `src/app/users`, `src/app/dashboard` | Sign-in/setup, the super-admin user manager, and the role-aware report landing page every user gets |
 | `src/components` | Session board, court cards, queue and side panels; `PlatformReportView` is the dashboard's shared stat-tiles/table/feed, reused by both roles |

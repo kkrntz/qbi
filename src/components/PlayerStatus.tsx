@@ -14,7 +14,7 @@ export function PlayerStatus({
   sessionId: string;
   playerId: string;
 }) {
-  const { state, dispatch } = useSession(clubId, sessionId);
+  const { state, error, busy, dispatch } = useSession(clubId, sessionId);
   const now = useTicker();
 
   if (!state) {
@@ -80,6 +80,23 @@ export function PlayerStatus({
           {mates.length > 0 ? `You & ${mates.map(name).join(", ")}` : "You"} vs{" "}
           {opponents.map(name).join(", ") || "—"}
         </p>
+        {mates.length === 1 && (
+          <div className="mt-2 flex w-full max-w-xs flex-col gap-2">
+            <p className="label">Choose your partner</p>
+            {[...mates, ...opponents].map((id) => (
+              <button
+                key={id}
+                onClick={() => dispatch({ type: "choosePartner", playerId: me.id, partnerId: id })}
+                disabled={busy || mates.includes(id)}
+                className={`btn w-full ${mates.includes(id) ? "btn-primary" : ""}`}
+              >
+                {name(id)}
+                {mates.includes(id) && " · your partner"}
+              </button>
+            ))}
+            {error && <p className="text-xs text-danger">{error}</p>}
+          </div>
+        )}
         <p className="text-xs text-muted">Your stats update when the game ends.</p>
       </Centered>
     );
