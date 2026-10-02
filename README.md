@@ -148,8 +148,8 @@ court setup and mode/winner-priority settings, same as before.
 Every session has its own standalone, phone-friendly check-in page at
 `/clubs/<clubId>/sessions/<sessionId>/checkin` — players add themselves to
 the queue, no operator needed. Click **Self check-in link** in the dashboard
-header to get the shareable URL (copy it, text it, or print it as a QR code
-for court-side signage). After checking in, a player sees their spot in line
+header to get its QR code for players to scan, along with the shareable URL
+(copy it or text it). After checking in, a player sees their spot in line
 and can hand the device to the next person — or tap **View my status** for
 their own personal, bookmarkable status page.
 
@@ -170,8 +170,8 @@ message instead.
 
 Players checked in by an operator (not via self check-in) don't get this link
 automatically, so a small **🔗** button next to every player's name — in the
-queue, the sitting-out list, and on a live court — copies their personal
-status link to the clipboard for the operator to hand off.
+queue, the sitting-out list, and on a live court — shows their personal
+status link as a QR code they can scan, with a **Copy** button for the link.
 
 ## How the rotation works
 

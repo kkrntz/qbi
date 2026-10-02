@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { QrCode } from "./QrCode";
 
 export function SelfCheckInLink({
   clubId,
@@ -47,9 +48,10 @@ export function SelfCheckInLink({
             shadow-lg"
         >
           <p className="text-xs text-muted">
-            Share this link (or its QR code) so players can check themselves
+            Players scan this QR code (or open the link) to check themselves
             in from their phone.
           </p>
+          {url && <QrCode value={url} />}
           <div className="flex items-center gap-1.5">
             <input
               readOnly
