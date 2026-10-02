@@ -1,5 +1,3 @@
-import { promises as fs } from "fs";
-import path from "path";
 import {
   randomBytes,
   randomUUID,
@@ -8,35 +6,14 @@ import {
   createHmac,
 } from "crypto";
 import type { PublicUser, Role, User } from "./types";
+import { createTextIfAbsent, readDoc, updateDoc } from "./storage";
 
-const DATA_DIR = process.env.DATA_DIR
-  ? path.resolve(process.env.DATA_DIR)
-  : path.join(process.cwd(), ".data");
-const USERS_FILE = path.join(DATA_DIR, "users.json");
-const SECRET_FILE = path.join(DATA_DIR, "auth-secret");
+// Document keys; see ./storage for where they live (DATA_DIR or S3).
+const USERS_KEY = "users.json";
+const SECRET_KEY = "auth-secret";
 
 export const SESSION_COOKIE = "qbi_session";
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-
-async function readJson<T>(file: string, fallback: T): Promise<T> {
-  try {
-    return JSON.parse(await fs.readFile(file, "utf8")) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-async function writeJson(file: string, data: unknown): Promise<void> {
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, JSON.stringify(data, null, 2), "utf8");
-}
-
-let chain: Promise<unknown> = Promise.resolve();
-function withLock<T>(fn: () => Promise<T>): Promise<T> {
-  const run = chain.then(fn, fn);
-  chain = run.catch(() => undefined);
-  return run;
-}
 
 // --- password hashing --------------------------------------------------
 
@@ -58,22 +35,14 @@ export function verifyPassword(password: string, stored: string): boolean {
 // Dependency-free stand-in for a JWT: base64url(payload) + "." +
 // HMAC-SHA256(payload), verified with a constant-time comparison. The
 // signing secret is read from AUTH_SECRET if set, otherwise generated once
-// and cached in .data/auth-secret so sessions survive restarts without any
-// configuration.
+// and stored as the `auth-secret` document so sessions survive restarts
+// without any configuration. It's created only-if-absent, so instances
+// racing on first boot all settle on the same secret.
 
 let cachedSecret: string | null = null;
 async function getSecret(): Promise<string> {
   if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET;
-  if (cachedSecret) return cachedSecret;
-  try {
-    cachedSecret = (await fs.readFile(SECRET_FILE, "utf8")).trim();
-    if (cachedSecret) return cachedSecret;
-  } catch {
-    // fall through to generate one
-  }
-  cachedSecret = randomBytes(32).toString("hex");
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(SECRET_FILE, cachedSecret, "utf8");
+  cachedSecret ??= await createTextIfAbsent(SECRET_KEY, randomBytes(32).toString("hex"));
   return cachedSecret;
 }
 
@@ -120,48 +89,45 @@ export function toPublicUser(user: User): PublicUser {
 }
 
 export function listUsers(): Promise<User[]> {
-  return withLock(() => readJson<User[]>(USERS_FILE, []));
+  return readDoc<User[]>(USERS_KEY, []);
 }
 
-export function findUserById(id: string): Promise<User | undefined> {
-  return withLock(async () => (await readJson<User[]>(USERS_FILE, [])).find((u) => u.id === id));
+export async function findUserById(id: string): Promise<User | undefined> {
+  return (await listUsers()).find((u) => u.id === id);
 }
 
-export function findUserByEmail(email: string): Promise<User | undefined> {
+export async function findUserByEmail(email: string): Promise<User | undefined> {
   const normalized = email.trim().toLowerCase();
-  return withLock(async () =>
-    (await readJson<User[]>(USERS_FILE, [])).find((u) => u.email === normalized),
-  );
+  return (await listUsers()).find((u) => u.email === normalized);
 }
 
-export function createUser(
+export async function createUser(
   email: string,
   password: string,
   role: Role,
   clubIds: string[],
 ): Promise<User> {
-  return withLock(async () => {
-    const normalized = email.trim().toLowerCase();
-    if (!normalized || !normalized.includes("@"))
-      throw new Error("Enter a valid email address.");
-    if (password.length < 8) throw new Error("Password needs to be at least 8 characters.");
-    if (role === "club_admin" && clubIds.length === 0)
-      throw new Error("A club admin needs at least one club.");
+  const normalized = email.trim().toLowerCase();
+  if (!normalized || !normalized.includes("@"))
+    throw new Error("Enter a valid email address.");
+  if (password.length < 8) throw new Error("Password needs to be at least 8 characters.");
+  if (role === "club_admin" && clubIds.length === 0)
+    throw new Error("A club admin needs at least one club.");
 
-    const users = await readJson<User[]>(USERS_FILE, []);
+  // Built (and hashed) once, outside the update, since updateDoc may re-run
+  // its callback on a write conflict.
+  const user: User = {
+    id: randomUUID(),
+    email: normalized,
+    passwordHash: hashPassword(password),
+    role,
+    clubIds: role === "super_admin" ? [] : clubIds,
+    createdAt: Date.now(),
+  };
+  return updateDoc<User[], User>(USERS_KEY, [], (users) => {
     if (users.some((u) => u.email === normalized))
       throw new Error("That email is already in use.");
-
-    const user: User = {
-      id: randomUUID(),
-      email: normalized,
-      passwordHash: hashPassword(password),
-      role,
-      clubIds: role === "super_admin" ? [] : clubIds,
-      createdAt: Date.now(),
-    };
     users.push(user);
-    await writeJson(USERS_FILE, users);
     return user;
   });
 }
@@ -174,8 +140,13 @@ export type UserUpdate = {
 };
 
 export function updateUser(id: string, update: UserUpdate): Promise<User> {
-  return withLock(async () => {
-    const users = await readJson<User[]>(USERS_FILE, []);
+  if (update.password !== undefined && update.password !== "" && update.password.length < 8)
+    return Promise.reject(new Error("Password needs to be at least 8 characters."));
+  // Hashed once, outside the update, since updateDoc may re-run its
+  // callback on a write conflict.
+  const passwordHash = update.password ? hashPassword(update.password) : null;
+
+  return updateDoc<User[], User>(USERS_KEY, [], (users) => {
     const user = users.find((u) => u.id === id);
     if (!user) throw new Error("That user no longer exists.");
 
@@ -188,11 +159,7 @@ export function updateUser(id: string, update: UserUpdate): Promise<User> {
       user.email = normalized;
     }
 
-    if (update.password !== undefined && update.password !== "") {
-      if (update.password.length < 8)
-        throw new Error("Password needs to be at least 8 characters.");
-      user.passwordHash = hashPassword(update.password);
-    }
+    if (passwordHash) user.passwordHash = passwordHash;
 
     const nextRole = update.role ?? user.role;
     const nextClubIds =
@@ -212,30 +179,24 @@ export function updateUser(id: string, update: UserUpdate): Promise<User> {
 
     user.role = nextRole;
     user.clubIds = nextClubIds;
-
-    await writeJson(USERS_FILE, users);
     return user;
   });
 }
 
 export function deleteUser(id: string): Promise<void> {
-  return withLock(async () => {
-    const users = await readJson<User[]>(USERS_FILE, []);
-    const next = users.filter((u) => u.id !== id);
-    if (next.length === users.length) throw new Error("That user no longer exists.");
-    if (!next.some((u) => u.role === "super_admin"))
+  return updateDoc<User[], void>(USERS_KEY, [], (users) => {
+    const index = users.findIndex((u) => u.id === id);
+    if (index === -1) throw new Error("That user no longer exists.");
+    if (!users.some((u) => u.role === "super_admin" && u.id !== id))
       throw new Error("Can't delete the last super admin.");
-    await writeJson(USERS_FILE, next);
+    users.splice(index, 1);
   });
 }
 
-export function verifyLogin(email: string, password: string): Promise<User | null> {
-  return withLock(async () => {
-    const normalized = email.trim().toLowerCase();
-    const user = (await readJson<User[]>(USERS_FILE, [])).find((u) => u.email === normalized);
-    if (!user || !verifyPassword(password, user.passwordHash)) return null;
-    return user;
-  });
+export async function verifyLogin(email: string, password: string): Promise<User | null> {
+  const user = await findUserByEmail(email);
+  if (!user || !verifyPassword(password, user.passwordHash)) return null;
+  return user;
 }
 
 // Authorization helpers (canAccessClub, canManageClub) live in
