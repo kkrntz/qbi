@@ -7,7 +7,7 @@ import { PlatformReportView } from "@/components/PlatformReportView";
 import { UserMenu } from "@/components/UserMenu";
 
 export const metadata: Metadata = {
-  title: "Dashboard — In-Que",
+  title: "Dashboard — Quebi",
   description: "Reports across your clubs.",
 };
 

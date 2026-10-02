@@ -4,7 +4,7 @@ import { requirePageUser } from "@/lib/pageAuth";
 import { ClubManager } from "@/components/ClubManager";
 
 export const metadata: Metadata = {
-  title: "Clubs — In-Que",
+  title: "Clubs — Quebi",
   description: "Manage clubs and their session history.",
 };
 

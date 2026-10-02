@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "In-Que",
+  title: "Quebi",
   description: "Court rotation and player queue for open-play pickleball.",
 };
 

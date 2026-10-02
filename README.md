@@ -1,4 +1,4 @@
-# In-Que
+# Quebi
 
 A court-rotation and player-queue board for open-play pickleball clubs. Each
 club keeps its own courts and runs a series of sessions over time — check

@@ -34,7 +34,7 @@ export function LoginForm({ needsSetup }: { needsSetup: boolean }) {
     <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-5 p-6">
       <div className="text-center">
         <h1 className="text-2xl font-bold tracking-tight">
-          <span className="text-ball">●</span> In-Que
+          <span className="text-ball">●</span> Quebi
         </h1>
         <p className="mt-1 text-sm text-muted">
           {needsSetup

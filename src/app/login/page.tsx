@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/session";
 import { LoginForm } from "@/components/LoginForm";
 
 export const metadata: Metadata = {
-  title: "Sign In — In-Que",
+  title: "Sign In — Quebi",
 };
 
 export default async function LoginPage() {
