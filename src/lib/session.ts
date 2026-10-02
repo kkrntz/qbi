@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import {
   SESSION_COOKIE,
   findUserById,
@@ -8,6 +8,14 @@ import {
 } from "./auth";
 import type { User } from "./types";
 
+/** Whether this request reached us over HTTPS. Next fills in
+ * x-forwarded-proto itself (or keeps a reverse proxy's), so this holds both
+ * behind a TLS-terminating proxy and when served directly. */
+async function isHttpsRequest(): Promise<boolean> {
+  const proto = (await headers()).get("x-forwarded-proto") ?? "";
+  return proto.split(",")[0].trim() === "https";
+}
+
 /** Signs in `userId`/`role` by setting the session cookie. Route Handlers only. */
 export async function createSessionCookie(userId: string, role: User["role"]) {
   const token = await signSession(newSessionPayload(userId, role));
@@ -15,7 +23,10 @@ export async function createSessionCookie(userId: string, role: User["role"]) {
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    // Keyed to the actual protocol, not NODE_ENV: a production build served
+    // over plain http on the LAN (phones at the courts) would otherwise get a
+    // Secure cookie the browser silently drops, so login never sticks.
+    secure: await isHttpsRequest(),
     path: "/",
     maxAge: 30 * 24 * 60 * 60,
   });
