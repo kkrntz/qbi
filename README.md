@@ -31,18 +31,46 @@ optional; uncomment only what you need):
   resolve against the project root; absolute paths are used as-is. Useful
   for a mounted volume in a container, or a separate directory per facility.
 - `AUTH_SECRET` — signs login session cookies. Optional: if unset, one is
-  generated and saved to `.data/auth-secret` on first run, so this is only
-  worth setting explicitly if you're running more than one server instance
-  against the same `DATA_DIR` and want them to share login sessions.
+  generated and saved as `auth-secret` in the data store on first run, so
+  this is only worth setting explicitly if you want logins to survive
+  wiping the data.
+- `STORAGE_BUCKET` — store data in this S3 bucket instead of `DATA_DIR`
+  (see [Deploying to AWS Amplify](#deploying-to-aws-amplify)).
+  `STORAGE_PREFIX` optionally puts it under a key prefix, and
+  `STORAGE_REGION` sets the bucket's region if it differs from the server's.
 
 `.env.local` is gitignored; `.env.example` is the committed template.
 
 Data lives under `.data/` (`clubs.json`, `users.json`, and one
-`club-sessions/<clubId>.json` per club), so it survives a restart and every
-device pointed at the server sees the same state (pages refetch every few
-seconds). If `.data/session.json` exists from a version of this app before
-clubs existed, it's imported automatically into a new "My Club" the first
-time `/clubs` loads.
+`club-sessions/<clubId>.json` per club), or under the same keys in S3 when
+`STORAGE_BUCKET` is set, so it survives a restart and every device pointed
+at the server sees the same state (pages refetch every few seconds). Every
+write is a conditional read-modify-write against the document's version
+(S3 ETag, or a content hash on disk), retried on conflict, so concurrent
+requests can't overwrite each other's changes, even across several server
+instances. If `session.json` exists from a version of this app before clubs
+existed, it's imported automatically into a new "My Club" the first time
+`/clubs` loads.
+
+### Deploying to AWS Amplify
+
+Amplify Hosting runs the server on short-lived compute whose filesystem is
+thrown away, so data must go to S3:
+
+1. Create a private S3 bucket (e.g. `qbi-data-<account>`), in the same
+   region as the Amplify app if you can.
+2. Create an IAM role Amplify can assume (trusted entity:
+   `amplify.amazonaws.com`) with `s3:GetObject`, `s3:PutObject` and
+   `s3:DeleteObject` on `arn:aws:s3:::<bucket>/*`. Attach it as the app's
+   **compute role** (App settings → IAM roles → Compute role).
+3. In App settings → Environment variables, set `STORAGE_BUCKET` and
+   `AUTH_SECRET` (any long random string, e.g. `openssl rand -hex 32`).
+   `amplify.yml` copies them into `.env.production` at build time, because
+   Amplify doesn't pass console variables to the running server otherwise.
+4. Connect the repo and deploy. The first visit to `/login` runs setup.
+
+To move existing local data across: `aws s3 sync .data s3://<bucket>/`
+(add the prefix if you set `STORAGE_PREFIX`).
 
 ## Accounts and roles
 
@@ -183,7 +211,8 @@ status link to the clipboard for the operator to hand off.
 | --- | --- |
 | `src/lib/types.ts` | Domain model: `Player`, `Court`, `Club`, `Session`, `User`, settings |
 | `src/lib/store.ts` | Pure reducer — `apply(state, action)` for every in-session mutation; knows nothing about persistence |
-| `src/lib/clubStore.ts` | File-backed persistence for clubs and their session history; calls `apply()` for game actions, migrates a legacy single-session file on first run; `getPlatformReport()`/`getClubAdminReport()` build the `/dashboard` rollups (every club vs. a filtered subset) over a shared `buildReport()` core |
+| `src/lib/storage.ts` | JSON document storage — local files (`DATA_DIR`) or S3 (`STORAGE_BUCKET`) — with versioned, retry-on-conflict `updateDoc()` |
+| `src/lib/clubStore.ts` | Persistence for clubs and their session history; calls `apply()` for game actions, migrates a legacy single-session file on first run; `getPlatformReport()`/`getClubAdminReport()` build the `/dashboard` rollups (every club vs. a filtered subset) over a shared `buildReport()` core |
 | `src/lib/auth.ts` | Password hashing, signed session cookies, user storage/CRUD — no framework dependency |
 | `src/lib/permissions.ts` | `canAccessClub` (view) / `canManageClub` (run live sessions) — pure, client-safe, no fs/crypto, so both API routes and client components can import it |
 | `src/lib/session.ts` | Cookie get/set/clear and `getCurrentUser()`, built on `next/headers` |
