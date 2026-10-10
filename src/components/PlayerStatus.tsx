@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSession, useTicker } from "@/lib/useSession";
+import { useCourtAlert } from "@/lib/useCourtAlert";
 import { formatClock, formatWait } from "@/lib/format";
 import { SkillChip } from "./ui";
 
@@ -17,6 +18,12 @@ export function PlayerStatus({
   const { state, error, busy, dispatch } = useSession(clubId, sessionId);
   const now = useTicker();
 
+  const me = state?.players.find((p) => p.id === playerId);
+  const myCourt = state?.courts.find(
+    (c) => c.match && (c.match.teamA.includes(playerId) || c.match.teamB.includes(playerId)),
+  );
+  const alerts = useCourtAlert(state ? (myCourt?.match?.id ?? null) : undefined, myCourt?.name);
+
   if (!state) {
     return (
       <Centered>
@@ -24,8 +31,6 @@ export function PlayerStatus({
       </Centered>
     );
   }
-
-  const me = state.players.find((p) => p.id === playerId);
 
   if (state.endedAt !== null) {
     return (
@@ -58,9 +63,7 @@ export function PlayerStatus({
   }
 
   if (me.status === "playing") {
-    const court = state.courts.find(
-      (c) => c.match && (c.match.teamA.includes(me.id) || c.match.teamB.includes(me.id)),
-    );
+    const court = myCourt;
     const match = court?.match;
     const onTeamA = match?.teamA.includes(me.id);
     const mates = (onTeamA ? match?.teamA : match?.teamB)?.filter((id) => id !== me.id) ?? [];
@@ -143,9 +146,20 @@ export function PlayerStatus({
         {state.courts.length} courts in play
       </p>
       <button
+        onClick={() => void alerts.enable()}
+        className={`btn mt-2 w-full max-w-xs ${alerts.enabled ? "" : "btn-primary"}`}
+      >
+        {alerts.enabled ? "🔔 Alerts on — tap to test" : "🔔 Alert me when I'm called"}
+      </button>
+      {alerts.enabled && (
+        <p className="text-xs text-muted">
+          Keep this page open with your sound on — it chimes when you&apos;re assigned a court.
+        </p>
+      )}
+      <button
         onClick={() => dispatch({ type: "setBenched", playerId: me.id, benched: true })}
         disabled={busy}
-        className="btn mt-2 w-full max-w-xs"
+        className="btn w-full max-w-xs"
       >
         ⏸ Put me on hold
       </button>

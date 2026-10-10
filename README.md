@@ -158,7 +158,10 @@ their own personal, bookmarkable status page.
 `/clubs/<clubId>/sessions/<sessionId>/p/<playerId>` is a live status page for
 one checked-in player — reached via **View my status** after self check-in.
 It updates automatically as the session changes: while waiting it shows their
-position in line, a **Put me on hold** button to sit out for a while without
+position in line, an **Alert me when I'm called** button (once tapped, the
+page chimes, vibrates, and — where the browser allows — shows a notification
+the moment they're assigned a court, as long as the page stays open), a
+**Put me on hold** button to sit out for a while without
 checking out, and a **Leave the queue** button; once their match starts it
 shows the court, teammate and opponents, and a live clock — and, in doubles,
 a **Choose your partner** list of the other three players on the court:
