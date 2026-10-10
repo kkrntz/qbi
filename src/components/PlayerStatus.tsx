@@ -106,16 +106,19 @@ export function PlayerStatus({
     return (
       <Centered>
         <span className="text-4xl">⏸</span>
-        <h1 className="text-xl font-bold">You&apos;re sitting out</h1>
+        <h1 className="text-xl font-bold">You&apos;re on hold</h1>
         <p className="text-sm text-muted">
           You&apos;re still checked in, just out of the rotation for now.
+          You&apos;ll rejoin at the back of the line.
         </p>
         <button
           onClick={() => dispatch({ type: "setBenched", playerId: me.id, benched: false })}
+          disabled={busy}
           className="btn btn-primary mt-2 w-full max-w-xs"
         >
           I&apos;m back — rejoin the queue
         </button>
+        {error && <p className="text-xs text-danger">{error}</p>}
       </Centered>
     );
   }
@@ -140,13 +143,22 @@ export function PlayerStatus({
         {state.courts.length} courts in play
       </p>
       <button
+        onClick={() => dispatch({ type: "setBenched", playerId: me.id, benched: true })}
+        disabled={busy}
+        className="btn mt-2 w-full max-w-xs"
+      >
+        ⏸ Put me on hold
+      </button>
+      <button
         onClick={() => {
           if (confirm("Leave the queue?")) dispatch({ type: "checkOut", playerId: me.id });
         }}
-        className="btn btn-danger mt-2 w-full max-w-xs"
+        disabled={busy}
+        className="btn btn-danger w-full max-w-xs"
       >
         Leave the queue
       </button>
+      {error && <p className="text-xs text-danger">{error}</p>}
     </Centered>
   );
 }

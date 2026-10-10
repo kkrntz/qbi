@@ -158,12 +158,14 @@ their own personal, bookmarkable status page.
 `/clubs/<clubId>/sessions/<sessionId>/p/<playerId>` is a live status page for
 one checked-in player — reached via **View my status** after self check-in.
 It updates automatically as the session changes: while waiting it shows their
-position in line and a **Leave the queue** button; once their match starts it
+position in line, a **Put me on hold** button to sit out for a while without
+checking out, and a **Leave the queue** button; once their match starts it
 shows the court, teammate and opponents, and a live clock — and, in doubles,
 a **Choose your partner** list of the other three players on the court:
 tapping one swaps them with the current teammate, leaving the other two as
-the opposing team (the latest pick on a court wins); if an operator
-benches them it offers **I'm back — rejoin the queue**. A player who's been
+the opposing team (the latest pick on a court wins); while they're on hold —
+by their own choice or because an operator benched them — it offers
+**I'm back — rejoin the queue**, which puts them at the back of the line. A player who's been
 checked out sees a friendly prompt to check in again instead of an error, and
 once the session ends everyone's page shows a simple "thanks for playing"
 message instead.
