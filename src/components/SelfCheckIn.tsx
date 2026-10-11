@@ -19,7 +19,6 @@ export function SelfCheckIn({
   const [checkedIn, setCheckedIn] = useState<{
     id: string | null;
     name: string;
-    position: number | null;
   } | null>(null);
 
   async function submit(event: React.FormEvent) {
@@ -31,19 +30,14 @@ export function SelfCheckIn({
     setSubmitting(false);
     if (!next) return;
 
-    // Best-effort: find where we landed in line. Name matching isn't a
-    // stable identifier, so if two people check in with the same name at
-    // the same moment this picks the most recent one.
+    // Best-effort: find our own player, for the status-page link. Name
+    // matching isn't a stable identifier, so if two people check in with
+    // the same name at the same moment this picks the most recent one.
     const mine = next.players
       .filter((p) => p.name === trimmed && p.status === "waiting")
       .sort((a, b) => b.checkedInAt - a.checkedInAt)[0];
-    const position = mine ? next.queue.indexOf(mine.id) + 1 : null;
 
-    setCheckedIn({
-      id: mine?.id ?? null,
-      name: trimmed,
-      position: position && position > 0 ? position : null,
-    });
+    setCheckedIn({ id: mine?.id ?? null, name: trimmed });
     setName("");
   }
 
@@ -65,9 +59,8 @@ export function SelfCheckIn({
         <span className="text-5xl">✅</span>
         <h1 className="text-xl font-bold">You&apos;re in, {checkedIn.name}!</h1>
         <p className="text-sm text-muted">
-          {checkedIn.position
-            ? `You're #${checkedIn.position} in line. Watch the courts — you'll be called when it's your turn.`
-            : "You've been added to the queue. Watch the courts — you'll be called when it's your turn."}
+          You&apos;ve been added to the queue. Watch the courts — you&apos;ll be called
+          when it&apos;s your turn.
         </p>
         {state && (
           <p className="text-xs text-muted">

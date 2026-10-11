@@ -24,6 +24,12 @@ export type Player = {
   checkedInAt: number;
   /** When the player last joined the back of the queue, for wait times. */
   queuedAt: number | null;
+  /**
+   * The player they've asked to play doubles with. A pair only counts while
+   * both point at each other; they're then called up together and put on
+   * the same team.
+   */
+  partnerId?: string;
 };
 
 export type Match = {
@@ -59,6 +65,12 @@ export type Settings = {
   gameMode: GameMode;
   /** Winners rejoin at the front of the queue instead of the back. */
   winnersStay: boolean;
+  /**
+   * New check-ins join ahead of players who have already had a game. On
+   * unless explicitly `false` — sessions saved before this setting existed
+   * don't have the field.
+   */
+  lateComerPriority?: boolean;
 };
 
 export type SessionState = {

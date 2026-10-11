@@ -40,7 +40,7 @@ function Team({
   onWin?: () => void;
 }) {
   return (
-    <div className="flex-1 rounded-xl bg-inset p-3">
+    <div className="min-w-0 rounded-xl bg-inset p-3">
       <div className="mb-2 flex items-center justify-between">
         <span className="label">{label}</span>
         {onWin && (
@@ -56,7 +56,10 @@ function Team({
           return (
             <li key={id} className="flex items-center gap-2">
               <Avatar player={player} />
-              <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+              <span
+                className="min-w-0 flex-1 truncate text-sm font-semibold"
+                title={player.name}
+              >
                 {player.name}
               </span>
               <SkillChip skill={player.skill} />
@@ -153,7 +156,7 @@ export function CourtCard({
 
       {court.match ? (
         <>
-          <div className="flex items-stretch gap-2">
+          <div className="flex flex-col gap-1.5">
             <Team
               clubId={clubId}
               sessionId={sessionId}
@@ -166,7 +169,7 @@ export function CourtCard({
                   : undefined
               }
             />
-            <span className="self-center text-xs font-bold text-muted">vs</span>
+            <span className="text-center text-xs font-bold text-muted">vs</span>
             <Team
               clubId={clubId}
               sessionId={sessionId}
@@ -183,9 +186,10 @@ export function CourtCard({
           {canManage && (
             <div className="flex gap-2">
               <button
-                onClick={() =>
-                  dispatch({ type: "endGame", courtId: court.id, winner: null })
-                }
+                onClick={() => {
+                  if (confirm(`End the game on ${court.name} with no winner?`))
+                    dispatch({ type: "endGame", courtId: court.id, winner: null });
+                }}
                 className="btn flex-1"
               >
                 End, no winner

@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useSession, useTicker } from "@/lib/useSession";
 import { useCourtAlert } from "@/lib/useCourtAlert";
 import { formatClock, formatWait } from "@/lib/format";
+import { partnerOf } from "@/lib/teamPicker";
+import { PartnerModal } from "./PartnerModal";
 import { SkillChip } from "./ui";
 
 export function PlayerStatus({
@@ -17,6 +20,11 @@ export function PlayerStatus({
 }) {
   const { state, error, busy, dispatch } = useSession(clubId, sessionId);
   const now = useTicker();
+  const [pairing, setPairing] = useState(false);
+  const players = useMemo(
+    () => new Map((state?.players ?? []).map((p) => [p.id, p])),
+    [state?.players],
+  );
 
   const me = state?.players.find((p) => p.id === playerId);
   const myCourt = state?.courts.find(
@@ -127,14 +135,11 @@ export function PlayerStatus({
   }
 
   // waiting
-  const position = state.queue.indexOf(me.id) + 1;
-
+  const partner = partnerOf(me, players);
   return (
     <Centered>
       <span className="text-4xl">⏳</span>
-      <h1 className="text-xl font-bold">
-        {position > 0 ? `You're #${position} in line` : "You're in the queue"}
-      </h1>
+      <h1 className="text-xl font-bold">You&apos;re in the queue</h1>
       <div className="flex items-center justify-center gap-2">
         <SkillChip skill={me.skill} />
         <span className="text-xs text-muted">
@@ -156,6 +161,11 @@ export function PlayerStatus({
           Keep this page open with your sound on — it chimes when you&apos;re assigned a court.
         </p>
       )}
+      {state.settings.gameMode === "doubles" && (
+        <button onClick={() => setPairing(true)} className="btn w-full max-w-xs">
+          {partner ? `🤝 Playing with ${partner.name} — change` : "🤝 Play as a pair"}
+        </button>
+      )}
       <button
         onClick={() => dispatch({ type: "setBenched", playerId: me.id, benched: true })}
         disabled={busy}
@@ -173,6 +183,15 @@ export function PlayerStatus({
         Leave the queue
       </button>
       {error && <p className="text-xs text-danger">{error}</p>}
+      {pairing && (
+        <PartnerModal
+          own
+          player={me}
+          players={players}
+          dispatch={dispatch}
+          onClose={() => setPairing(false)}
+        />
+      )}
     </Centered>
   );
 }

@@ -152,7 +152,7 @@ export function SessionDashboard({
           )}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="panel p-4">
             <LeaderboardPanel players={state.players} />
           </div>
@@ -165,6 +165,7 @@ export function SessionDashboard({
   }
 
   const { courts, queue, settings, history } = state;
+  const lateComerPriority = settings.lateComerPriority !== false;
   const benched = state.players.filter((p) => p.status === "benched");
   const playing = state.players.filter((p) => p.status === "playing").length;
   const liveCourts = courts.filter((c) => c.match).length;
@@ -233,6 +234,24 @@ export function SessionDashboard({
                 Winner priority
               </button>
 
+              <button
+                onClick={() =>
+                  dispatch({
+                    type: "setLateComerPriority",
+                    lateComerPriority: !lateComerPriority,
+                  })
+                }
+                className={`btn text-xs ${lateComerPriority ? "btn-primary" : ""}`}
+                aria-pressed={lateComerPriority}
+                title={
+                  lateComerPriority
+                    ? "On: a player who checks in late joins ahead of everyone who has already played, so they get a first game sooner. Click to send new check-ins to the back of the line."
+                    : "Off: a player who checks in late joins the back of the line. Click to put new check-ins ahead of everyone who has already played."
+                }
+              >
+                Late comer priority
+              </button>
+
               <button onClick={() => dispatch({ type: "addCourt" })} className="btn text-xs">
                 + Court
               </button>
@@ -274,9 +293,9 @@ export function SessionDashboard({
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="flex flex-col gap-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {courts.map((court) => (
               <CourtCard
                 key={court.id}
@@ -302,7 +321,7 @@ export function SessionDashboard({
             </div>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="panel p-4">
               <LeaderboardPanel players={state.players} />
             </div>
@@ -319,7 +338,7 @@ export function SessionDashboard({
               <CheckInForm dispatch={dispatch} />
               <p className="mt-2 text-[11px] text-muted">
                 {settings.gameMode === "doubles"
-                  ? `Teams are balanced automatically from the first ${needed} in line.`
+                  ? `Teams are balanced automatically from the first ${needed} in line; pairs stay together.`
                   : `The first ${needed} in line are paired head to head.`}
               </p>
             </div>
@@ -331,6 +350,7 @@ export function SessionDashboard({
               sessionId={sessionId}
               queue={queue}
               players={players}
+              history={history}
               gameMode={settings.gameMode}
               now={now}
               dispatch={dispatch}
@@ -383,6 +403,7 @@ export function SessionDashboard({
               courtId={court.id}
               courtName={court.name}
               gameMode={settings.gameMode}
+              history={history}
               waiting={waitingPlayers}
               players={players}
               dispatch={dispatch}

@@ -2,22 +2,40 @@
 
 import { useState } from "react";
 import type { Dispatch } from "@/lib/useSession";
-import type { GameMode, Player } from "@/lib/types";
+import type { GameMode, MatchRecord, Player } from "@/lib/types";
 import { playersPerTeam } from "@/lib/types";
-import { balanceTeams, place, teamStrength, type Teams } from "@/lib/teamPicker";
+import {
+  nextGroup,
+  place,
+  recentGroups,
+  splitTeams,
+  teamStrength,
+  type Teams,
+} from "@/lib/teamPicker";
 import { Avatar, SkillChip } from "./ui";
 
-/** Front-of-queue players, balanced by skill, as a starting-point lineup. */
-function suggestTeams(waiting: Player[], gameMode: GameMode, perTeam: number): Teams {
-  const upNext = waiting.slice(0, perTeam * 2);
-  if (upNext.length < perTeam * 2) return { A: [], B: [] };
-  return balanceTeams(upNext, gameMode);
+/** The group "Start next game" would pick, as a starting-point lineup. */
+function suggestTeams(
+  waiting: Player[],
+  players: Map<string, Player>,
+  history: MatchRecord[],
+  gameMode: GameMode,
+  perTeam: number,
+): Teams {
+  if (waiting.length < perTeam * 2) return { A: [], B: [] };
+  const queue = waiting.map((p) => p.id);
+  const upNext = nextGroup(queue, players, gameMode, recentGroups(history));
+  return splitTeams(
+    waiting.filter((p) => upNext.includes(p.id)),
+    gameMode,
+  );
 }
 
 export function AssignPlayersModal({
   courtId,
   courtName,
   gameMode,
+  history,
   waiting,
   players,
   dispatch,
@@ -26,6 +44,7 @@ export function AssignPlayersModal({
   courtId: string;
   courtName: string;
   gameMode: GameMode;
+  history: MatchRecord[];
   waiting: Player[];
   players: Map<string, Player>;
   dispatch: Dispatch;
@@ -35,7 +54,7 @@ export function AssignPlayersModal({
   // Pre-filled with the next players in line, balanced by skill — the
   // operator can still rearrange or swap anyone before starting.
   const [teams, setTeams] = useState<Teams>(() =>
-    suggestTeams(waiting, gameMode, perTeam),
+    suggestTeams(waiting, players, history, gameMode, perTeam),
   );
   const [submitting, setSubmitting] = useState(false);
 
@@ -176,7 +195,7 @@ export function AssignPlayersModal({
 
         <div className="flex gap-2">
           <button
-            onClick={() => setTeams(suggestTeams(waiting, gameMode, perTeam))}
+            onClick={() => setTeams(suggestTeams(waiting, players, history, gameMode, perTeam))}
             className="btn"
             title="Reset to the next players in line, balanced by skill"
           >

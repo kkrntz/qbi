@@ -184,6 +184,8 @@ status link as a QR code they can scan, with a **Copy** button for the link.
   already queued who has played at least one game this session, but behind
   anyone still waiting for their first game — so everyone gets a first game
   before regulars get a second, with FCFS order preserved within each group.
+  Turn **Late comer priority** off to send every new check-in to the back of
+  the line instead.
 - **Start next game** takes the first 4 players in line (2 in singles mode) and
   splits them into even teams, pairing the strongest available player with the
   weakest. If that exact foursome played together in one of the last couple of
@@ -202,6 +204,16 @@ status link as a QR code they can scan, with a **Copy** button for the link.
   of the queue (they didn't choose to leave); a swapped-in player starts
   playing immediately. Stats are only credited for whoever is on the roster
   when the game actually ends.
+- **Play as a pair** — in doubles, two players can pair up: 🤝 on a queue row
+  (operator) or **Play as a pair** on a player's own status page. A pair is
+  called up together and always lands on the same team, with the other two
+  players as their opponents. They're called once both have reached the
+  front of the line (pairing never moves anyone ahead), and a pair that
+  doesn't fit the last open slot of a game waits for the next one while the
+  next single player steps in. A pair lasts until either one unpairs or
+  checks out; a player who is already paired can't be picked by someone
+  else. Pairs are ignored in singles, and manual lineups (**Assign
+  players…**, ✎) can still split them.
 - **Won / End, no winner** records the game, credits games played and wins, and
   returns everyone to the back of the queue — nobody cuts ahead of players
   who were already waiting. **Winner priority** decides the order of the two

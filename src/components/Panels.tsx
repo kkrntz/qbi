@@ -36,7 +36,10 @@ export function BenchPanel({
                 bg-inset p-2"
             >
               <Avatar player={player} />
-              <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+              <span
+                className="min-w-0 flex-1 truncate text-sm font-semibold"
+                title={player.name}
+              >
                 {player.name}
               </span>
               <SkillChip skill={player.skill} />
@@ -91,18 +94,20 @@ export function LeaderboardPanel({ players }: { players: Player[] }) {
       {ranked.length === 0 ? (
         <Empty>No games finished yet.</Empty>
       ) : (
-        <table className="w-full text-sm">
+        <table className="w-full table-fixed text-sm">
           <thead>
             <tr className="label text-left">
               <th className="pb-1 font-semibold">Player</th>
-              <th className="pb-1 text-right font-semibold">W</th>
-              <th className="pb-1 text-right font-semibold">GP</th>
+              <th className="w-10 pb-1 text-right font-semibold">W</th>
+              <th className="w-10 pb-1 text-right font-semibold">GP</th>
             </tr>
           </thead>
           <tbody>
             {ranked.map((player) => (
               <tr key={player.id} className="border-t border-border">
-                <td className="truncate py-1.5 font-medium">{player.name}</td>
+                <td className="truncate py-1.5 font-medium" title={player.name}>
+                  {player.name}
+                </td>
                 <td className="py-1.5 text-right font-mono tabular-nums">
                   {player.wins}
                 </td>
@@ -148,7 +153,7 @@ export function HistoryPanel({
                   {formatClock(record.endedAt - record.startedAt)}
                 </span>
               </div>
-              <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+              <div className="mt-0.5 flex flex-wrap items-center gap-1.5 break-words [&>span]:min-w-0">
                 <span
                   className={
                     record.winner === "A" ? "font-bold text-accent" : undefined

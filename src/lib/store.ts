@@ -10,7 +10,7 @@ import {
   playersPerGame,
   playersPerTeam,
 } from "./types";
-import { balanceTeams } from "./teamPicker";
+import { nextGroup, partnerOf, recentGroups, splitTeams } from "./teamPicker";
 
 /**
  * Pure game-session reducer: `apply(state, action)` mutates `state` in
@@ -45,39 +45,11 @@ function enqueue(state: SessionState, id: string, front = false) {
   player.queuedAt = Date.now();
 }
 
-/** How many of the most recent finished matches count as "too soon" to repeat. */
-const REPEAT_LOOKBACK = 2;
-
-const groupOf = (ids: string[]) => new Set(ids);
-const isSameGroup = (ids: string[], group: Set<string>) =>
-  ids.length === group.size && ids.every((id) => group.has(id));
-
-/**
- * Picks the next `needed` players off the front of the queue, but — as much
- * as the queue allows — avoids handing back the exact same foursome that
- * played together in one of the last few matches. When that happens, the
- * two lowest-priority slots in the group are swapped for the next two
- * players waiting, so the group changes meaningfully rather than by a
- * single face; the players who have waited longest still keep their spot.
- * If the queue can't supply two replacements, it swaps as many as it can;
- * if none are available, the front of the queue plays anyway.
- */
-function pickUpNextGroup(state: SessionState, needed: number): string[] {
-  const recentGroups = state.history
-    .slice(0, REPEAT_LOOKBACK)
-    .map((match) => groupOf([...match.teamA, ...match.teamB]));
-
-  const group = state.queue.slice(0, needed);
-  if (!recentGroups.some((recent) => isSameGroup(group, recent))) return group;
-
-  const swapCount = Math.min(2, needed, state.queue.length - needed);
-  const trial = [...group];
-  for (let i = 0; i < swapCount; i++) {
-    // Lowest-priority slots (end of the group) make way for the next
-    // players in line (start of what's left of the queue).
-    trial[needed - 1 - i] = state.queue[needed + i];
-  }
-  return trial;
+/** Breaks up the player's pair, if they're in one. */
+function unpair(state: SessionState, player: Player) {
+  const partner = partnerOf(player, new Map(state.players.map((p) => [p.id, p])));
+  if (partner) delete partner.partnerId;
+  delete player.partnerId;
 }
 
 // --- actions ---------------------------------------------------------------
@@ -95,10 +67,12 @@ export type Action =
   | { type: "startCustomGame"; courtId: string; teamA: string[]; teamB: string[] }
   | { type: "updateMatch"; courtId: string; teamA: string[]; teamB: string[] }
   | { type: "choosePartner"; playerId: string; partnerId: string }
+  | { type: "setPartner"; playerId: string; partnerId: string | null }
   | { type: "endGame"; courtId: string; winner: Winner }
   | { type: "cancelGame"; courtId: string }
   | { type: "setGameMode"; gameMode: GameMode }
-  | { type: "setWinnersStay"; winnersStay: boolean };
+  | { type: "setWinnersStay"; winnersStay: boolean }
+  | { type: "setLateComerPriority"; lateComerPriority: boolean };
 
 export function apply(state: SessionState, action: Action): void {
   switch (action.type) {
@@ -116,14 +90,18 @@ export function apply(state: SessionState, action: Action): void {
         queuedAt: Date.now(),
       };
       state.players.push(player);
-      // New arrivals join ahead of anyone already queued who has played at
-      // least one game this session, but behind players still waiting for
-      // their first game — everyone gets a first game before regulars get
-      // a second, and FCFS still decides order within each group.
-      const aheadOf = state.queue.findIndex((id) => {
-        const existing = byId(state, id);
-        return !existing || existing.gamesPlayed > 0;
-      });
+      // With late comer priority on, new arrivals join ahead of anyone
+      // already queued who has played at least one game this session, but
+      // behind players still waiting for their first game — everyone gets a
+      // first game before regulars get a second, and FCFS still decides
+      // order within each group. With it off, they join the back of the line.
+      const aheadOf =
+        state.settings.lateComerPriority === false
+          ? -1
+          : state.queue.findIndex((id) => {
+              const existing = byId(state, id);
+              return !existing || existing.gamesPlayed > 0;
+            });
       if (aheadOf === -1) state.queue.push(player.id);
       else state.queue.splice(aheadOf, 0, player.id);
       return;
@@ -135,6 +113,7 @@ export function apply(state: SessionState, action: Action): void {
       if (player.status === "playing")
         throw new Error(`${player.name} is in a game — end it first.`);
       dropFromQueue(state, action.playerId);
+      unpair(state, player);
       // Someone who has played stays on the roster as `left`, so the match
       // history and leaderboard keep their name and stats. A player who
       // never played (a typo, a change of mind) is simply removed.
@@ -211,11 +190,16 @@ export function apply(state: SessionState, action: Action): void {
           `Need ${needed} players in the queue to start a ${state.settings.gameMode} game.`,
         );
 
-      const upNextIds = pickUpNextGroup(state, needed);
+      const upNextIds = nextGroup(
+        state.queue,
+        new Map(state.players.map((p) => [p.id, p])),
+        state.settings.gameMode,
+        recentGroups(state.history),
+      );
       const upNext = upNextIds
         .map((id) => byId(state, id))
         .filter((p): p is Player => Boolean(p));
-      const { A: teamA, B: teamB } = balanceTeams(upNext, state.settings.gameMode);
+      const { A: teamA, B: teamB } = splitTeams(upNext, state.settings.gameMode);
 
       const chosen = new Set(upNextIds);
       state.queue = state.queue.filter((id) => !chosen.has(id));
@@ -336,6 +320,26 @@ export function apply(state: SessionState, action: Action): void {
       return;
     }
 
+    case "setPartner": {
+      const player = byId(state, action.playerId);
+      if (!player || player.status === "left")
+        throw new Error("That player is no longer checked in.");
+      if (action.partnerId === null) {
+        unpair(state, player);
+        return;
+      }
+      const partner = byId(state, action.partnerId);
+      if (!partner || partner.status === "left" || partner.id === player.id)
+        throw new Error("Pick another checked-in player as a partner.");
+      if (partner.partnerId === player.id && player.partnerId === partner.id) return;
+      if (partnerOf(partner, new Map(state.players.map((p) => [p.id, p]))))
+        throw new Error(`${partner.name} already has a partner.`);
+      unpair(state, player);
+      player.partnerId = partner.id;
+      partner.partnerId = player.id;
+      return;
+    }
+
     case "endGame": {
       const target = state.courts.find((c) => c.id === action.courtId);
       if (!target?.match) return;
@@ -399,6 +403,10 @@ export function apply(state: SessionState, action: Action): void {
 
     case "setWinnersStay":
       state.settings.winnersStay = action.winnersStay;
+      return;
+
+    case "setLateComerPriority":
+      state.settings.lateComerPriority = action.lateComerPriority;
       return;
   }
 }

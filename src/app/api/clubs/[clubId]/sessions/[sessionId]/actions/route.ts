@@ -16,6 +16,7 @@ const PUBLIC_ACTION_TYPES = new Set<Action["type"]>([
   "checkOut",
   "setBenched",
   "choosePartner",
+  "setPartner",
 ]);
 
 export async function POST(
