@@ -44,7 +44,7 @@ export function PlayerStatus({
     );
   }
 
-  if (!me) {
+  if (!me || me.status === "left") {
     return (
       <Centered>
         <span className="text-4xl">👋</span>

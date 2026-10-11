@@ -37,7 +37,7 @@ function dropFromQueue(state: SessionState, id: string) {
 
 function enqueue(state: SessionState, id: string, front = false) {
   const player = byId(state, id);
-  if (!player || player.status === "benched") return;
+  if (!player || player.status === "benched" || player.status === "left") return;
   dropFromQueue(state, id);
   if (front) state.queue.unshift(id);
   else state.queue.push(id);
@@ -134,14 +134,22 @@ export function apply(state: SessionState, action: Action): void {
       if (!player) return;
       if (player.status === "playing")
         throw new Error(`${player.name} is in a game — end it first.`);
-      state.players = state.players.filter((p) => p.id !== action.playerId);
       dropFromQueue(state, action.playerId);
+      // Someone who has played stays on the roster as `left`, so the match
+      // history and leaderboard keep their name and stats. A player who
+      // never played (a typo, a change of mind) is simply removed.
+      if (player.gamesPlayed > 0) {
+        player.status = "left";
+        player.queuedAt = null;
+      } else {
+        state.players = state.players.filter((p) => p.id !== action.playerId);
+      }
       return;
     }
 
     case "setBenched": {
       const player = byId(state, action.playerId);
-      if (!player) return;
+      if (!player || player.status === "left") return;
       if (player.status === "playing")
         throw new Error(`${player.name} is in a game — end it first.`);
       if (action.benched) {

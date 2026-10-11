@@ -13,8 +13,12 @@ export type Player = {
   id: string;
   name: string;
   skill: Skill;
-  /** `waiting` = in the queue, `playing` = on a court, `benched` = sitting out. */
-  status: "waiting" | "playing" | "benched";
+  /**
+   * `waiting` = in the queue, `playing` = on a court, `benched` = sitting
+   * out, `left` = checked out after playing — kept so their games and
+   * stats stay on the session's record.
+   */
+  status: "waiting" | "playing" | "benched" | "left";
   gamesPlayed: number;
   wins: number;
   checkedInAt: number;

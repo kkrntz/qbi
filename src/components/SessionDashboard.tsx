@@ -184,7 +184,8 @@ export function SessionDashboard({
             <span className="text-ball">●</span> {state.label || "Session"}
           </h1>
           <p className="text-xs text-muted">
-            {state.players.length} checked in · {playing} on court ·{" "}
+            {state.players.filter((p) => p.status !== "left").length} checked in ·{" "}
+            {playing} on court ·{" "}
             {queue.length} waiting · {history.length} games played
           </p>
         </div>
