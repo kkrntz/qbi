@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, useTicker } from "@/lib/useSession";
 import { playersPerGame, type Player, type PublicUser } from "@/lib/types";
+import { projectTeams, type Teams } from "@/lib/teamPicker";
 import { buildSessionExport, downloadJson, sessionFileName } from "@/lib/sessionExport";
 import { AssignPlayersModal } from "./AssignPlayersModal";
 import { CheckInForm } from "./CheckInForm";
@@ -37,6 +38,10 @@ export function SessionDashboard({
   const router = useRouter();
   const [editMatchCourtId, setEditMatchCourtId] = useState<string | null>(null);
   const [assignCourtId, setAssignCourtId] = useState<string | null>(null);
+  // Previewed "Start next game" lineups per court, kept until started or
+  // cancelled. Local to this device — nothing changes for players until the
+  // game actually starts.
+  const [projections, setProjections] = useState<Record<string, Teams>>({});
   const [endingSession, setEndingSession] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -170,6 +175,31 @@ export function SessionDashboard({
   const playing = state.players.filter((p) => p.status === "playing").length;
   const liveCourts = courts.filter((c) => c.match).length;
   const needed = playersPerGame(settings.gameMode);
+
+  function projectGame(courtId: string) {
+    // Players already previewed on another court aren't picked again, so
+    // two courts can be lined up side by side.
+    const held = new Set(
+      Object.entries(projections)
+        .filter(([id]) => id !== courtId)
+        .flatMap(([, t]) => [...t.A, ...t.B]),
+    );
+    const available = waitingPlayers.filter((p) => !held.has(p.id));
+    const teams = projectTeams(available, players, history, settings.gameMode);
+    if (teams.A.length + teams.B.length < needed) {
+      alert("Not enough players waiting who aren't already lined up on another court.");
+      return;
+    }
+    setProjections((prev) => ({ ...prev, [courtId]: teams }));
+  }
+
+  function clearProjection(courtId: string) {
+    setProjections((prev) => {
+      const next = { ...prev };
+      delete next[courtId];
+      return next;
+    });
+  }
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4 p-4 sm:p-6">
@@ -311,6 +341,9 @@ export function SessionDashboard({
                 canManage={canManage}
                 onEditMatch={() => setEditMatchCourtId(court.id)}
                 onAssignPlayers={() => setAssignCourtId(court.id)}
+                projected={projections[court.id] ?? null}
+                onProjectGame={() => projectGame(court.id)}
+                onClearProjection={() => clearProjection(court.id)}
               />
             ))}
           </div>
@@ -406,8 +439,10 @@ export function SessionDashboard({
               history={history}
               waiting={waitingPlayers}
               players={players}
+              initialTeams={projections[court.id]}
               dispatch={dispatch}
               onClose={() => setAssignCourtId(null)}
+              onStarted={() => clearProjection(court.id)}
             />
           );
         })()}

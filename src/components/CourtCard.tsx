@@ -2,6 +2,7 @@
 
 import type { Dispatch } from "@/lib/useSession";
 import type { Court, GameMode, Player } from "@/lib/types";
+import type { Teams } from "@/lib/teamPicker";
 import { playersPerGame } from "@/lib/types";
 import { formatClock } from "@/lib/format";
 import { PlayerLinkButton } from "./PlayerLinkButton";
@@ -22,6 +23,10 @@ type Props = {
   canManage: boolean;
   onEditMatch: () => void;
   onAssignPlayers: () => void;
+  /** The lineup previewed by "Start next game", not yet on the court. */
+  projected: Teams | null;
+  onProjectGame: () => void;
+  onClearProjection: () => void;
 };
 
 function Team({
@@ -90,9 +95,29 @@ export function CourtCard({
   canManage,
   onEditMatch,
   onAssignPlayers,
+  projected,
+  onProjectGame,
+  onClearProjection,
 }: Props) {
   const needed = playersPerGame(gameMode);
   const shortBy = needed - queueDepth;
+  const preview = canManage && !court.match && !court.closed ? projected : null;
+  // Someone in the preview may have since been sent to another court, benched
+  // or checked out — the lineup has to be picked again before it can start.
+  const projectionStale =
+    preview !== null &&
+    [...preview.A, ...preview.B].some((id) => players.get(id)?.status !== "waiting");
+
+  async function startProjected() {
+    if (!preview || projectionStale) return;
+    const ok = await dispatch({
+      type: "startCustomGame",
+      courtId: court.id,
+      teamA: preview.A,
+      teamB: preview.B,
+    });
+    if (ok) onClearProjection();
+  }
 
   return (
     <section className="panel flex flex-col gap-3 p-4">
@@ -204,6 +229,41 @@ export function CourtCard({
             </div>
           )}
         </>
+      ) : preview ? (
+        <>
+          <p className="text-xs text-muted">
+            Up next on {court.name} — check the lineup, then start the game.
+          </p>
+          <div className="flex flex-col gap-1.5">
+            <Team clubId={clubId} sessionId={sessionId} label="Team A" ids={preview.A} players={players} />
+            <span className="text-center text-xs font-bold text-muted">vs</span>
+            <Team clubId={clubId} sessionId={sessionId} label="Team B" ids={preview.B} players={players} />
+          </div>
+          {projectionStale && (
+            <p className="text-xs font-semibold text-danger">
+              Someone in this lineup is no longer waiting — cancel and start the next game again.
+            </p>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={startProjected}
+              className="btn btn-primary flex-1"
+              disabled={projectionStale}
+            >
+              Start game
+            </button>
+            <button
+              onClick={onAssignPlayers}
+              className="btn"
+              title="Rearrange the teams or swap anyone before starting"
+            >
+              Adjust…
+            </button>
+            <button onClick={onClearProjection} className="btn btn-danger">
+              Cancel
+            </button>
+          </div>
+        </>
       ) : (
         <div className="flex flex-col items-center gap-2 rounded-xl bg-inset px-3 py-6">
           <p className="text-sm text-muted">
@@ -216,9 +276,10 @@ export function CourtCard({
           {canManage && (
             <div className="flex gap-2">
               <button
-                onClick={() => dispatch({ type: "startGame", courtId: court.id })}
+                onClick={onProjectGame}
                 className="btn btn-primary"
                 disabled={court.closed || shortBy > 0}
+                title="Preview the next players in line before putting them on the court"
               >
                 Start next game
               </button>

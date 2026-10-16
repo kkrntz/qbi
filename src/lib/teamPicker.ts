@@ -143,6 +143,26 @@ export function splitTeams(group: Player[], mode: GameMode): Teams {
 }
 
 /**
+ * The lineup "Start next game" would pick from `waiting` (in queue order):
+ * the next group in line, split into teams. Empty when there aren't enough
+ * players waiting for a full game.
+ */
+export function projectTeams(
+  waiting: Player[],
+  players: Map<string, Player>,
+  history: MatchRecord[],
+  mode: GameMode,
+): Teams {
+  if (waiting.length < playersPerGame(mode)) return { A: [], B: [] };
+  const queue = waiting.map((p) => p.id);
+  const upNext = nextGroup(queue, players, mode, recentGroups(history));
+  return splitTeams(
+    waiting.filter((p) => upNext.includes(p.id)),
+    mode,
+  );
+}
+
+/**
  * Toggles or moves a player into team `target`. Clicking a player already on
  * that team removes them; clicking them while on the other team moves them
  * over (if there's room); a full team ignores the click.
