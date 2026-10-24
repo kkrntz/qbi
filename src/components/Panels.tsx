@@ -81,22 +81,35 @@ export function BenchPanel({
   );
 }
 
+/** Games a player needs before they're ranked, so one lucky win doesn't top the board. */
+const MIN_RANKED_GAMES = 4;
+
+const winRate = (p: Player) => p.wins / p.gamesPlayed;
+
 export function LeaderboardPanel({ players }: { players: Player[] }) {
+  // Ranked by win percentage; ties go to more wins, then more games.
   const ranked = [...players]
-    .filter((p) => p.gamesPlayed > 0)
-    .sort((a, b) => b.wins - a.wins || b.gamesPlayed - a.gamesPlayed)
+    .filter((p) => p.gamesPlayed >= MIN_RANKED_GAMES)
+    .sort(
+      (a, b) =>
+        winRate(b) - winRate(a) || b.wins - a.wins || b.gamesPlayed - a.gamesPlayed,
+    )
     .slice(0, 10);
 
   return (
     <div>
-      <h2 className="mb-2 text-sm font-bold">Session leaders</h2>
+      <h2 className="mb-2 text-sm font-bold">
+        Session leaders{" "}
+        <span className="font-normal text-muted">(min {MIN_RANKED_GAMES} games)</span>
+      </h2>
       {ranked.length === 0 ? (
-        <Empty>No games finished yet.</Empty>
+        <Empty>Players are ranked by win % once they&apos;ve played {MIN_RANKED_GAMES} games.</Empty>
       ) : (
         <table className="w-full table-fixed text-sm">
           <thead>
             <tr className="label text-left">
               <th className="pb-1 font-semibold">Player</th>
+              <th className="w-12 pb-1 text-right font-semibold">Win %</th>
               <th className="w-10 pb-1 text-right font-semibold">W</th>
               <th className="w-10 pb-1 text-right font-semibold">GP</th>
             </tr>
@@ -106,6 +119,9 @@ export function LeaderboardPanel({ players }: { players: Player[] }) {
               <tr key={player.id} className="border-t border-border">
                 <td className="truncate py-1.5 font-medium" title={player.name}>
                   {player.name}
+                </td>
+                <td className="py-1.5 text-right font-mono font-semibold tabular-nums">
+                  {Math.round(winRate(player) * 100)}%
                 </td>
                 <td className="py-1.5 text-right font-mono tabular-nums">
                   {player.wins}
