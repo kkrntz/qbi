@@ -4,11 +4,11 @@ import { useState } from "react";
 import type { Dispatch } from "@/lib/useSession";
 import type { GameMode, MatchRecord, Player } from "@/lib/types";
 import { playersPerGame } from "@/lib/types";
-import { nextGroup, partnerOf, recentGroups } from "@/lib/teamPicker";
+import { nextGroup, partnerOf, playedGroups } from "@/lib/teamPicker";
 import { formatWait } from "@/lib/format";
 import { PartnerModal } from "./PartnerModal";
 import { PlayerLinkButton } from "./PlayerLinkButton";
-import { Avatar, Empty, SkillChip } from "./ui";
+import { Avatar, Empty } from "./ui";
 
 export function QueuePanel({
   clubId,
@@ -17,6 +17,7 @@ export function QueuePanel({
   players,
   history,
   gameMode,
+  lineups,
   now,
   dispatch,
   canManage,
@@ -27,14 +28,23 @@ export function QueuePanel({
   players: Map<string, Player>;
   history: MatchRecord[];
   gameMode: GameMode;
+  /** Lineups previewed on a court and waiting to be started there. */
+  lineups: { court: string; ids: string[] }[];
   now: number;
   dispatch: Dispatch;
   canManage: boolean;
 }) {
   const needed = playersPerGame(gameMode);
-  // Who the next game would actually take — not always the first few in
+  // Players lined up on a court are assigned next; after them, whoever the
+  // next game would take from everyone else — not always the first few in
   // line, since pairs are called together and repeat groups are avoided.
-  const upNextIds = new Set(nextGroup(queue, players, gameMode, recentGroups(history)));
+  const linedUpOn = new Map(
+    lineups.flatMap(({ court, ids }) => ids.map((id) => [id, court] as const)),
+  );
+  const rest = queue.filter((id) => !linedUpOn.has(id));
+  const upNextIds = new Set(
+    rest.length >= needed ? nextGroup(rest, players, gameMode, playedGroups(history)) : [],
+  );
   const [pairingId, setPairingId] = useState<string | null>(null);
   const pairing = pairingId ? players.get(pairingId) : undefined;
 
@@ -55,7 +65,8 @@ export function QueuePanel({
           {queue.map((id, index) => {
             const player = players.get(id);
             if (!player) return null;
-            const upNext = upNextIds.has(id);
+            const linedUpCourt = linedUpOn.get(id);
+            const upNext = upNextIds.has(id) || linedUpCourt !== undefined;
             const partner = partnerOf(player, players);
             return (
               <li
@@ -84,7 +95,11 @@ export function QueuePanel({
                   >
                     {player.name}
                   </span>
-                  <SkillChip skill={player.skill} />
+                  {linedUpCourt && (
+                    <span className="chip bg-accent text-accent-ink" title={`Lined up on ${linedUpCourt}`}>
+                      {linedUpCourt}
+                    </span>
+                  )}
                   <PlayerLinkButton
                     clubId={clubId}
                     sessionId={sessionId}

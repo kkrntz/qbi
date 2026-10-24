@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import type { Dispatch } from "@/lib/useSession";
 import type { Player } from "@/lib/types";
 import { partnerOf } from "@/lib/teamPicker";
-import { Avatar, SkillChip } from "./ui";
+import { Avatar } from "./ui";
 
 /**
  * Picks (or clears) the player's doubles partner. `own` words it for the
@@ -82,7 +82,6 @@ export function PartnerModal({
                       <span className="truncate text-sm font-semibold" title={other.name}>
                         {other.name}
                       </span>
-                      <SkillChip skill={other.skill} />
                     </div>
                     {taken && (
                       <span className="block truncate text-[11px] text-muted">

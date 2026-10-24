@@ -4,7 +4,7 @@ import type { Dispatch } from "@/lib/useSession";
 import type { MatchRecord, Player } from "@/lib/types";
 import { formatClock } from "@/lib/format";
 import { PlayerLinkButton } from "./PlayerLinkButton";
-import { Avatar, Empty, SkillChip } from "./ui";
+import { Avatar, Empty } from "./ui";
 
 export function BenchPanel({
   clubId,
@@ -42,7 +42,6 @@ export function BenchPanel({
               >
                 {player.name}
               </span>
-              <SkillChip skill={player.skill} />
               <PlayerLinkButton
                 clubId={clubId}
                 sessionId={sessionId}

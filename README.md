@@ -2,8 +2,8 @@
 
 A court-rotation and player-queue board for open-play pickleball clubs. Each
 club keeps its own courts and runs a series of sessions over time — check
-players into a session, let the app pull the next group onto a free court
-with balanced teams, record results, and when the night's done, end the
+players into a session, let the app pull the next group onto a free court,
+record results, and when the night's done, end the
 session (it becomes permanent, read-only history) and start the next one.
 Operators sign in (a super admin runs every club; a club admin runs only
 the ones assigned to them); players never need an account — self check-in
@@ -180,20 +180,22 @@ status link as a QR code they can scan, with a **Copy** button for the link.
 
 ## How the rotation works
 
-- **Check in** adds a player with a skill level, placed ahead of anyone
+- **Check in** adds a player, placed ahead of anyone
   already queued who has played at least one game this session, but behind
   anyone still waiting for their first game — so everyone gets a first game
   before regulars get a second, with FCFS order preserved within each group.
   Turn **Late comer priority** off to send every new check-in to the back of
   the line instead.
 - **Start next game** takes the first 4 players in line (2 in singles mode) and
-  splits them into even teams, pairing the strongest available player with the
-  weakest. If that exact foursome played together in one of the last couple of
-  matches, it swaps the two lowest-priority slots for the next two queued
-  players instead of repeating the same group (one slot if only one
-  replacement is available) — the longest-waiting players in the group keep
-  their spot whenever possible. **Assign players…** opens a manual picker
-  instead, pre-filled with that same next-in-line, skill-balanced group as a
+  splits them into two teams in line order (pairs stay together). The same
+  foursome never plays together twice in a session: if
+  the group already played together, it swaps the two lowest-priority slots
+  for the next two queued players (one slot if that's still a repeat, or the
+  earliest group in line that hasn't played together) — the longest-waiting
+  players in the group keep their spot whenever possible. Only if every
+  possible group has already played does the front of the line play anyway.
+  **Assign players…** opens a manual picker
+  instead, pre-filled with that same next-in-line group as a
   starting point — rearrange who's on which team, or swap anyone out for a
   different player currently waiting, then press **Start game**. **Reset**
   returns to that automatic suggestion; **Clear** empties the picker to build

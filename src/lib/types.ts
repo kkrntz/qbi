@@ -1,18 +1,7 @@
-export type Skill = "beginner" | "intermediate" | "advanced";
-
-export const SKILL_RATING: Record<Skill, number> = {
-  beginner: 1,
-  intermediate: 2,
-  advanced: 3,
-};
-
-export const SKILLS: Skill[] = ["beginner", "intermediate", "advanced"];
-
 /** A player who has checked in for the session. */
 export type Player = {
   id: string;
   name: string;
-  skill: Skill;
   /**
    * `waiting` = in the queue, `playing` = on a court, `benched` = sitting
    * out, `left` = checked out after playing — kept so their games and

@@ -7,7 +7,6 @@ import { useCourtAlert } from "@/lib/useCourtAlert";
 import { formatClock, formatWait } from "@/lib/format";
 import { partnerOf } from "@/lib/teamPicker";
 import { PartnerModal } from "./PartnerModal";
-import { SkillChip } from "./ui";
 
 export function PlayerStatus({
   clubId,
@@ -141,7 +140,6 @@ export function PlayerStatus({
       <span className="text-4xl">⏳</span>
       <h1 className="text-xl font-bold">You&apos;re in the queue</h1>
       <div className="flex items-center justify-center gap-2">
-        <SkillChip skill={me.skill} />
         <span className="text-xs text-muted">
           waiting {formatWait(now - (me.queuedAt ?? now))} · {me.gamesPlayed} played
         </span>

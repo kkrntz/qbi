@@ -4,8 +4,8 @@ import { useState } from "react";
 import type { Dispatch } from "@/lib/useSession";
 import type { GameMode, Match, Player } from "@/lib/types";
 import { playersPerTeam } from "@/lib/types";
-import { place, sameTeams, teamStrength, type Teams } from "@/lib/teamPicker";
-import { Avatar, SkillChip } from "./ui";
+import { place, sameTeams, type Teams } from "@/lib/teamPicker";
+import { Avatar } from "./ui";
 
 export function EditMatchModal({
   courtId,
@@ -88,8 +88,6 @@ export function EditMatchModal({
                 <span className="label">Team {side}</span>
                 <span className="text-[11px] text-muted">
                   {teams[side].length}/{perTeam}
-                  {teams[side].length === perTeam &&
-                    ` · str ${teamStrength(teams[side], players)}`}
                 </span>
               </div>
               {teams[side].length === 0 ? (
@@ -142,7 +140,6 @@ export function EditMatchModal({
                         <span className="truncate text-sm font-semibold">
                           {player.name}
                         </span>
-                        <SkillChip skill={player.skill} />
                       </div>
                       <span className="text-[11px] text-muted">
                         {isOnCourt ? "currently on court" : "waiting"} ·{" "}

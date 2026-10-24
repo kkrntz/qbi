@@ -4,8 +4,8 @@ import { useState } from "react";
 import type { Dispatch } from "@/lib/useSession";
 import type { GameMode, MatchRecord, Player } from "@/lib/types";
 import { playersPerTeam } from "@/lib/types";
-import { place, projectTeams, teamStrength, type Teams } from "@/lib/teamPicker";
-import { Avatar, SkillChip } from "./ui";
+import { place, projectTeams, type Teams } from "@/lib/teamPicker";
+import { Avatar } from "./ui";
 
 export function AssignPlayersModal({
   courtId,
@@ -32,7 +32,7 @@ export function AssignPlayersModal({
   onStarted?: () => void;
 }) {
   const perTeam = playersPerTeam(gameMode);
-  // Pre-filled with the next players in line, balanced by skill — the
+  // Pre-filled with the next players in line — the
   // operator can still rearrange or swap anyone before starting.
   const [teams, setTeams] = useState<Teams>(
     () => initialTeams ?? projectTeams(waiting, players, history, gameMode),
@@ -92,8 +92,6 @@ export function AssignPlayersModal({
                 <span className="label">Team {side}</span>
                 <span className="text-[11px] text-muted">
                   {teams[side].length}/{perTeam}
-                  {teams[side].length === perTeam &&
-                    ` · str ${teamStrength(teams[side], players)}`}
                 </span>
               </div>
               {teams[side].length === 0 ? (
@@ -150,7 +148,6 @@ export function AssignPlayersModal({
                         <span className="truncate text-sm font-semibold">
                           {player.name}
                         </span>
-                        <SkillChip skill={player.skill} />
                       </div>
                       <span className="text-[11px] text-muted">
                         {player.gamesPlayed} played
@@ -181,7 +178,7 @@ export function AssignPlayersModal({
           <button
             onClick={() => setTeams(projectTeams(waiting, players, history, gameMode))}
             className="btn"
-            title="Reset to the next players in line, balanced by skill"
+            title="Reset to the next players in line"
           >
             Reset
           </button>

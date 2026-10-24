@@ -15,7 +15,6 @@ export function buildSessionExport(state: SessionState) {
       .sort((a, b) => b.wins - a.wins || b.gamesPlayed - a.gamesPlayed)
       .map((p) => ({
         name: p.name,
-        skill: p.skill,
         gamesPlayed: p.gamesPlayed,
         wins: p.wins,
       })),

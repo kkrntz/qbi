@@ -1,12 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import type { Dispatch } from "@/lib/useSession";
 import type { Court, GameMode, Player } from "@/lib/types";
 import type { Teams } from "@/lib/teamPicker";
 import { playersPerGame } from "@/lib/types";
 import { formatClock } from "@/lib/format";
 import { PlayerLinkButton } from "./PlayerLinkButton";
-import { Avatar, SkillChip } from "./ui";
+import { Avatar } from "./ui";
 
 type Props = {
   clubId: string;
@@ -67,7 +68,6 @@ function Team({
               >
                 {player.name}
               </span>
-              <SkillChip skill={player.skill} />
               <PlayerLinkButton
                 clubId={clubId}
                 sessionId={sessionId}
@@ -122,8 +122,12 @@ export function CourtCard({
   return (
     <section className="panel flex flex-col gap-3 p-4">
       <header className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <h3 className="text-base font-bold">{court.name}</h3>
+        <div className="flex min-w-0 items-center gap-2">
+          {canManage ? (
+            <CourtName court={court} dispatch={dispatch} />
+          ) : (
+            <h3 className="truncate text-base font-bold">{court.name}</h3>
+          )}
           {court.match ? (
             <span className="chip bg-ball text-ball-ink">live</span>
           ) : court.closed ? (
@@ -296,5 +300,46 @@ export function CourtCard({
         </div>
       )}
     </section>
+  );
+}
+
+/** The court's name; tap it to rename the court, even mid-game. */
+function CourtName({ court, dispatch }: { court: Court; dispatch: Dispatch }) {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  async function save() {
+    if (draft === null) return;
+    const name = draft.trim();
+    setDraft(null);
+    if (name && name !== court.name)
+      await dispatch({ type: "renameCourt", courtId: court.id, name });
+  }
+
+  if (draft === null) {
+    return (
+      <button
+        onClick={() => setDraft(court.name)}
+        className="min-w-0 truncate text-left text-base font-bold hover:text-accent"
+        title="Rename this court"
+      >
+        {court.name}
+      </button>
+    );
+  }
+  return (
+    <input
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => void save()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") void save();
+        if (e.key === "Escape") setDraft(null);
+      }}
+      maxLength={40}
+      autoFocus
+      aria-label="Court name"
+      className="w-32 min-w-0 rounded-md border border-accent bg-inset px-2 py-0.5
+        text-base font-bold text-text outline-none"
+    />
   );
 }

@@ -1,25 +1,5 @@
-import type { Player, Skill } from "@/lib/types";
+import type { Player } from "@/lib/types";
 import { initials } from "@/lib/format";
-
-const SKILL_STYLE: Record<Skill, string> = {
-  beginner: "bg-inset text-muted",
-  intermediate: "bg-accent-soft text-accent",
-  advanced: "bg-ball text-ball-ink",
-};
-
-const SKILL_SHORT: Record<Skill, string> = {
-  beginner: "bgnr",
-  intermediate: "intr",
-  advanced: "adv",
-};
-
-export function SkillChip({ skill }: { skill: Skill }) {
-  return (
-    <span className={`chip ${SKILL_STYLE[skill]}`} title={skill}>
-      {SKILL_SHORT[skill]}
-    </span>
-  );
-}
 
 export function Avatar({ player }: { player: Player }) {
   return (

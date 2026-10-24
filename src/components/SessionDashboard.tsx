@@ -371,7 +371,7 @@ export function SessionDashboard({
               <CheckInForm dispatch={dispatch} />
               <p className="mt-2 text-[11px] text-muted">
                 {settings.gameMode === "doubles"
-                  ? `Teams are balanced automatically from the first ${needed} in line; pairs stay together.`
+                  ? `Teams are made automatically from the next ${needed} in line; pairs stay together.`
                   : `The first ${needed} in line are paired head to head.`}
               </p>
             </div>
@@ -385,6 +385,12 @@ export function SessionDashboard({
               players={players}
               history={history}
               gameMode={settings.gameMode}
+              lineups={courts
+                .filter((c) => projections[c.id] && !c.match && !c.closed)
+                .map((c) => ({
+                  court: c.name,
+                  ids: [...projections[c.id].A, ...projections[c.id].B],
+                }))}
               now={now}
               dispatch={dispatch}
               canManage={canManage}

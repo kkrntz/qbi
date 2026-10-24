@@ -5,12 +5,11 @@ import {
   MatchRecord,
   Player,
   SessionState,
-  Skill,
   Winner,
   playersPerGame,
   playersPerTeam,
 } from "./types";
-import { nextGroup, partnerOf, recentGroups, splitTeams } from "./teamPicker";
+import { nextGroup, partnerOf, playedGroups, splitTeams } from "./teamPicker";
 
 /**
  * Pure game-session reducer: `apply(state, action)` mutates `state` in
@@ -55,13 +54,14 @@ function unpair(state: SessionState, player: Player) {
 // --- actions ---------------------------------------------------------------
 
 export type Action =
-  | { type: "checkIn"; name: string; skill: Skill }
+  | { type: "checkIn"; name: string }
   | { type: "checkOut"; playerId: string }
   | { type: "setBenched"; playerId: string; benched: boolean }
   | { type: "moveInQueue"; playerId: string; direction: "up" | "down" }
   | { type: "sendToFront"; playerId: string }
   | { type: "addCourt" }
   | { type: "removeCourt"; courtId: string }
+  | { type: "renameCourt"; courtId: string; name: string }
   | { type: "setCourtClosed"; courtId: string; closed: boolean }
   | { type: "startGame"; courtId: string }
   | { type: "startCustomGame"; courtId: string; teamA: string[]; teamB: string[] }
@@ -82,7 +82,6 @@ export function apply(state: SessionState, action: Action): void {
       const player: Player = {
         id: randomUUID(),
         name,
-        skill: action.skill,
         status: "waiting",
         gamesPlayed: 0,
         wins: 0,
@@ -169,6 +168,15 @@ export function apply(state: SessionState, action: Action): void {
       return;
     }
 
+    case "renameCourt": {
+      const target = state.courts.find((c) => c.id === action.courtId);
+      if (!target) throw new Error("That court no longer exists.");
+      const name = action.name.trim().slice(0, 40);
+      if (!name) throw new Error("A court needs a name.");
+      target.name = name;
+      return;
+    }
+
     case "setCourtClosed": {
       const target = state.courts.find((c) => c.id === action.courtId);
       if (!target) return;
@@ -194,7 +202,7 @@ export function apply(state: SessionState, action: Action): void {
         state.queue,
         new Map(state.players.map((p) => [p.id, p])),
         state.settings.gameMode,
-        recentGroups(state.history),
+        playedGroups(state.history),
       );
       const upNext = upNextIds
         .map((id) => byId(state, id))

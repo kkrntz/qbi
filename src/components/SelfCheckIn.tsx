@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSession } from "@/lib/useSession";
-import { SKILLS, type Skill } from "@/lib/types";
 
 export function SelfCheckIn({
   clubId,
@@ -14,7 +13,6 @@ export function SelfCheckIn({
 }) {
   const { state, error, dispatch, dismissError } = useSession(clubId, sessionId);
   const [name, setName] = useState("");
-  const [skill, setSkill] = useState<Skill>("intermediate");
   const [submitting, setSubmitting] = useState(false);
   const [checkedIn, setCheckedIn] = useState<{
     id: string | null;
@@ -26,7 +24,7 @@ export function SelfCheckIn({
     const trimmed = name.trim();
     if (!trimmed || submitting) return;
     setSubmitting(true);
-    const next = await dispatch({ type: "checkIn", name: trimmed, skill });
+    const next = await dispatch({ type: "checkIn", name: trimmed });
     setSubmitting(false);
     if (!next) return;
 
@@ -129,29 +127,6 @@ export function SelfCheckIn({
               text-base text-text outline-none placeholder:text-muted
               focus:border-accent"
           />
-        </div>
-
-        <div>
-          <span className="label mb-1.5 block">Skill level</span>
-          <div className="flex gap-1.5" role="radiogroup" aria-label="Skill level">
-            {SKILLS.map((option) => (
-              <button
-                key={option}
-                type="button"
-                role="radio"
-                aria-checked={skill === option}
-                onClick={() => setSkill(option)}
-                className={`flex-1 rounded-lg border px-2 py-3 text-sm font-semibold
-                  capitalize transition ${
-                    skill === option
-                      ? "border-accent bg-accent-soft text-accent"
-                      : "border-border bg-inset text-muted hover:text-text"
-                  }`}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
         </div>
 
         <button
